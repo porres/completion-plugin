@@ -1,92 +1,104 @@
-# completion-plugin
+# PD AutoComplete Plugin
 
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+This Gui-Plugin enables auto-completion for [pure-data](http://puredata.info) objects. 
 
-This Gui-Plugin enables auto-completion for [pure-data](http://puredata.info) objects.
-Just hit the TAB key while typing into an object to trigger completion mode.
+* **Does it run on Vanilla?** Yes. It is a Tk/Tcl pluging made to run in Vanilla.
+* **What about Purr Data?** Purr Data uses [nw.js](https://nwjs.io/) for it's GUI. So this pluging doesn't work in Purr Data. But if you're on windows you can use [PD AutoComplete Script](https://github.com/HenriAugusto/PD-AutoComplete-Script)
+
+Here is a link to the [old repo](https://github.com/gusano/completion-plugin).
 
 ## Screenshot
 
-![completion-plugin screenshot](http://www.yvanvolochine.com/media/images/completion_new.gif)
+![PD AutoComplete Plugin gif](https://github.com/HenriAugusto/completion-plugin/blob/master/images/PD_completion-plugin_gif_demo.gif)
 
-You can see a video demo of the plugin [on vimeo](https://vimeo.com/23557543).
+## How to install:
 
-## Install:
+### Deken (easy way)
 
- - just put the whole `completion-plugin` folder anywhere and add it to your `PD PATH`
+ - just search for the completion-plugin on deken <3
 
- - alternatively, you can just clone it inside `~/pd-externals`:
-`$ git clone git://github.com/gusano/completion-plugin.git ~/pd-externals/completion-plugin`
+### Manually (not so easy but still easy way)
 
-## Notes:
+ - just [download](https://github.com/HenriAugusto/completion-plugin/releases) the plugin and put the whole `PD-AutoComplete-plugin` folder anywhere and add it to your pd paths in **edit->Preferences->Path**
+ - The easiest way is it on the "extras" folders of your pd install. If you do this you don't need to set the path.
+ - Yet i recommend having a "shared extras" folder and add it to your PD Path. This way if you have more than 1 pd installs (example: if you've used the zip distributions to have more than one PD version)
 
-By default, only Pd internals are available, but you can add your own
-objects|abstractions names:
 
- - add them into any `*.txt` file inside `user_objects` subfolder
- - these files should contain one object|abstraction name per line (no commas at the end of the line)
+## Instructions:
 
-Some other options can be tweaked in the `completion.cfg` config file, it should be pretty straightforward.
+Just hit the TAB key while typing into an object to trigger completion mode.
 
-Some libraries will automatically get their externals added if they were loaded with -lib (like Gem, gridflow, ...).
-Their objects list can be found in the subfolder `lib_objects`.
+Use up and down to move through the suggestions. Use shift+arrows for faster navigation.
 
-Send bug reports to `contact@yvanvolochine.com`.
+### Search modes
 
-## Version history:
+There are three search modes
 
-### 0.43:
+    * **normal:** search for exact matches
+    * **skip:** search for anything containing the input chars in order. Ex: plf matches zexy/[p]o[l]y[f]un
+    * **monolithic:** search for objects contained in **multi-object** ("monolithic") distributions (.dll, pd_darwin, .pdlinux). Those are read from monolithicLibs.txt. The respective library must be loaded! See [this link](https://github.com/pure-data/externals-howto#library) on that matter.
 
- - change license to "BSD License 2.0"
+* Just type normally to use **normal**
+* Start your search with an "**.**" to use **skip**
+* Start your search with an "**,**" to use **monolithic**
 
-### 0.42:
+### Externals scanning
 
- - add `user_objects` file support
- - add optional offset for popup position
- - add forgotten drawpolygon
+The plugin intelligently scans the paths set by the user (edit->preferences->path) to scan for externals without the need for the user to type their name on a file. Consequently the script doesn't need a list of objects. 
 
-### 0.41:
+It searches the static default paths (ex: *C:/PureData/pd-0.48-0.msw/pd/extra/*) for libraries and then searches any path you've set in *edit->preferences->path* or that Deken have set for you.
 
- - cleanup, simplify focus behavior, remove unused proc, better bindings
- - add support to remember `send, receive, table, delread, ...` argument names
- - add libraries objects lists (Gem, gridflow, py)
- - various fixes
+#### duplicates
 
-### 0.40:
+Some objects **by design** might be scanned twice as this reflects Pure Data objection instantiation.
 
- - new GUI
- - rename to 'completion-plugin.tcl'
- - add bash completion mode
- - add support for osx and win32
- - add *.cfg file for user options
- - TODO add support for user arguments (like [tabread foo], etc) ??
+If you've ser for example the following folder in *edit->preferences->path*
 
-### 0.33:
+```
+C:/Users/Stravinsky/Dropbox/pd-0.48-0.msw/pd/extra/iemguts/
+```
 
- - cosmetic fixes for osx
- - better box coordinates
- - bugfix: popup menu wrongly placed with huge fonts
+You can use the canvasargs external in two ways (regardless of the autocomplete plugin):
 
-### 0.32:
+[canvasargs]
+[iemguts/canvasargs]
 
- - add colors
- - bugfix: cycling has 1 step too much
- - bugfix: first completed doesn't erase typed text
+The first use the path you've set. The second uses the standard path. So the autocomplete plugin will show two options for canvasargs.
+Notice that the first method doesn't avoid naming conflicts while the seconds does. For that reason the latter is usually preferred.
 
-### 0.31:
+#### Extra keywords
 
- - add TAB support to cycle through completions
+You can define useful stuff in any .txt inside the folder *custom_completions*. I've already added some useful keywords like "anything", "adddollar", etc and even some constants like Pi and the golden ratio.
 
-### 0.3:
+### Settings
 
- - simplify cycling code
- - bugfix: nameclash with right-click popup (sic)
- - bugfix: missing or mispelled internals
+* now you can configure the plugin under preferences->PD AutoComplete Settings.
 
-### 0.2:
+ - **auto complete library names:**
+   - *on:* [list-abs/list-clip]
+   - *off:* [list-clip]
+   - **When the "autocomplete libraries" option is disabled:** you can use shift+enter to type only the object name (withouh the library)*
+- **Number of lines to display:** number of completion suggestions the plugin will display
+- **Font size:** the size of the font used for the suggestions window
+- **Maximum scan depth:** how deep the plugin will look inside a search path.
+   - *Example:* the *iemguts* libraries's folder contains a subfolder "example" with some explanatory patches that you might not want to scan.
+   - So if you set a path to the iemguts folder and use a value of 1 for max scan depth it will only scan the stuff inside the *iemguts/* folder. If you set 2 or more it will also scan *iemguts/examples*
+- **bkg color options:** change the background color for each search mode.
 
- - add popup menu for completion
+Settings are applied immediately after you change them but are only saved when you click "save to file". That means unless you save them the next time you run PD the plugin will use the previous settings.
 
-### 0.12:
+### Config file
 
- - fix namespace
+The settings are saved in the `completion.cfg` config file.
+
+### Development 
+
+Please fill in an issue on the github repository if you find a bug.
+
+#### Development Guide
+
+I've written a [developtment guide](https://github.com/HenriAugusto/completion-plugin/blob/master/development%20guide.md) to make it easier to tackle on the code.
+
+#### Change log
+
+You can find it [here.](https://github.com/HenriAugusto/completion-plugin/blob/master/changelog.md)
