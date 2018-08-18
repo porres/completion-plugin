@@ -5,7 +5,7 @@ This Gui-Plugin enables auto-completion for [pure-data](http://puredata.info) ob
 * **Does it run on Vanilla?** Yes. It is a Tk/Tcl pluging made to run in Vanilla.
 * **What about Purr Data?** Purr Data uses [nw.js](https://nwjs.io/) for it's GUI. So this pluging doesn't work in Purr Data. But if you're on windows you can use [PD AutoComplete Script](https://github.com/HenriAugusto/PD-AutoComplete-Script)
 
-Here is a link to the [old repo](https://github.com/gusano/completion-plugin).
+Here is a link to the [original repo by Yvan Volochine](https://github.com/gusano/completion-plugin).
 
 ## Screenshot
 
