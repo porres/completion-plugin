@@ -13,6 +13,8 @@ Here is a link to the [original repo by Yvan Volochine](https://github.com/gusan
 
 ## How to install:
 
+*After* you install the plugin **you must restart Pure Data**.
+
 ### Deken (easy way)
 
  - just search for the completion-plugin on deken <3
