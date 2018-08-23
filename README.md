@@ -36,9 +36,11 @@ Use up and down to move through the suggestions. Use shift+arrows for faster nav
 
 There are three search modes
 
-    * **normal:** search for exact matches
-    * **skip:** search for anything containing the input chars in order. Ex: plf matches zexy/[p]o[l]y[f]un
-    * **monolithic:** search for objects contained in **multi-object** ("monolithic") distributions (.dll, pd_darwin, .pdlinux). Those are read from monolithicLibs.txt. The respective library must be loaded! See [this link](https://github.com/pure-data/externals-howto#library) on that matter.
+* **normal:** search for exact matches
+* **skip:** search for anything containing the input chars in order. Ex: plf matches zexy/[p]o[l]y[f]un
+* **monolithic:** search for objects contained in **multi-object** ("monolithic") distributions (.dll, pd_darwin, .pdlinux). Those are read from monolithicLibs.txt. The respective library must be loaded! See [this link](https://github.com/pure-data/externals-howto#library) on that matter.
+
+How to use each one:
 
 * Just type normally to use **normal**
 * Start your search with an "**.**" to use **skip**
