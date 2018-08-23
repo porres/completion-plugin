@@ -49,6 +49,8 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
+set ::completion::plugin_version "0.45.0"
+
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
 set ::completion::config(max_lines) 20
@@ -101,18 +103,11 @@ set ::debug_settings 1 ;#messages related to storing [send/receive] names [tabre
 set ::current_search_mode 0
 
 # all pd VANILLA objects
-set ::all_externals {hslider vslider bng cnv bang float symbol int send receive select route pack unpack trigger spigot moses until print makefilename change swap value \
-    list {list append} {list fromsybmol} {list length} {list prepend} {list split} {list store} {list tosymbol} {list trim} delay metro line timer cputime realtime \
-    pipe + - * / pow == != > < >= <= & && | || % << >> mtof powtodb rmstodb ftom dbtopow dbtorms mod div sin cos tan atan atan2 sqrt log exp abs random max min clip wrap notein ctlin \
-    pgmin bendin touchin polytouchin midiin sysexin midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout midiout makenote stripnote \
-    oscparse oscformat tabread tabread4 tabwrite soundfiler table array loadbang netsend netreceive glist textfile text openpanel savepanel bag poly key keyup keyname \
-    declare +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ q8_sqrt~ q8_rsqrt~ wrap~ fft~ ifft~ rfft~ rifft~ pow~ log~ exp~ abs~ framp~ mtof~ ftom~ rmstodb~ dbtorms~ dac~ adc~ sig~ line~ vline~ \
-    threshdold~ snapshot~ vsnapshot~ bang~ samplerate~ send~ receive~ throw~ catch~ block~ switch~ readsf~ writesf~ phasor~ cos~ osc~ tabwrite~ tabplay~ tabread~ tabread4~ tabosc4~ tabsend~ \
-    tabreceive~ vcf~ noise~ env~ hip~ lop~ bp~ biquad~ samphold~ print~ rpole~ rzero~ rzero_rev~ cpole~ czero~ czero_rev~ delwrite~ delread~ delread4~ vd~ inlet outlet inlet~ outlet~ clone \
-    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ \
-    expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~}
+set ::all_externals {}
 
 set ::monolithic_externals {}
+
+set ::loaded_libs {}
 
 #useful function for debugging
 proc ::completion::debug_msg {dbgMsg {debugKey "none"}} {
@@ -163,6 +158,7 @@ proc ::completion::read_extras_henri {} {
 #called once upon plugin initialization
 proc ::completion::init {} {
     variable external_filetype
+    ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
     ::completion::read_config
     #::completion::read_extras
     switch -- $::windowingsystem {
@@ -171,15 +167,27 @@ proc ::completion::init {} {
         "x11"   { set external_filetype *.pd_linux }
     }
     bind all <Tab> {+::completion::trigger}
+    ::completion::scan_all_completions
+    ::completion::init_options_menu
+}
+
+proc ::completion::scan_all_completions {} {
+    set ::all_externals {hslider vslider bng cnv bang float symbol int send receive select route pack unpack trigger spigot moses until print makefilename change swap value list {list append} {list fromsybmol} {list length} {list prepend} {list split} {list store} {list tosymbol} {list trim} delay metro line timer cputime realtime \
+    pipe + - * / pow == != > < >= <= & && | || % << >> mtof powtodb rmstodb ftom dbtopow dbtorms mod div sin cos tan atan atan2 sqrt log exp abs random max min clip wrap notein ctlin pgmin bendin touchin polytouchin midiin sysexin midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout midiout makenote stripnote \
+    oscparse oscformat tabread tabread4 tabwrite soundfiler table array loadbang netsend netreceive glist textfile text openpanel savepanel bag poly key keyup keyname declare +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ q8_sqrt~ q8_rsqrt~ wrap~ fft~ ifft~ rfft~ rifft~ pow~ log~ exp~ abs~ framp~ mtof~ ftom~ rmstodb~ dbtorms~ dac~ adc~ sig~ line~ vline~ \
+    threshdold~ snapshot~ vsnapshot~ bang~ samplerate~ send~ receive~ throw~ catch~ block~ switch~ readsf~ writesf~ phasor~ cos~ osc~ tabwrite~ tabplay~ tabread~ tabread4~ tabosc4~ tabsend~ tabreceive~ vcf~ noise~ env~ hip~ lop~ bp~ biquad~ samphold~ print~ rpole~ rzero~ rzero_rev~ cpole~ czero~ czero_rev~ delwrite~ delread~ delread4~ vd~ inlet outlet inlet~ outlet~ clone \
+    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~}
+    set ::monolithic_externals {}
     ::completion::add_user_externals
     #::completion::add_libraries_externals_from_startup_flags
     ::completion::add_user_customcompletions
     ::completion::add_user_monolithiclist
-    ::completion::init_menu
+    set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
     set ::all_externals [lsort $::all_externals]
+    ::pdwindow::post "\[completion-plugin\] finished scanning externals\n"
 }
 
-proc ::completion::init_menu {} {
+proc ::completion::init_options_menu {} {
     if {$::windowingsystem eq "aqua"} {
         set mymenu .menubar.apple.preferences
     } else {
@@ -187,10 +195,10 @@ proc ::completion::init_menu {} {
     }
     
     if { [catch {
-        $mymenu entryconfigure [_ "AutoComplete Settings"] -command {::completion::show_options_gui}
+        $mymenu entryconfigure [_ "Auto Complete settings"] -command {::completion::show_options_gui}
     } _ ] } {
         $mymenu add separator
-        $mymenu add command -label [_ "AutoComplete Settings"] -command {::completion::show_options_gui}
+        $mymenu add command -label [_ "Auto Complete settings"] -command {::completion::show_options_gui}
     }
 }
 
@@ -253,6 +261,7 @@ proc ::completion::show_options_gui {} {
     #Buttons
     button .options.f.save_btn -text "save to file" -command ::completion::write_config
     button .options.f.default_btn -text "default" -command ::completion::restore_default_option
+    button .options.f.rescan_btn -text "rescan" -command ::completion::scan_all_completions
 
     set padding 2
 
@@ -305,9 +314,11 @@ proc ::completion::show_options_gui {} {
     grid .options.f.mono_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
     incr current_row
     
+    # Status labels and buttons
     grid .options.f.status_label -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
     grid .options.f.default_btn -column 1 -row $current_row -padx $padding -pady 8 -sticky "e"
     grid .options.f.save_btn -column 2 -row $current_row -padx $padding -pady 8 -sticky "w"
+    grid .options.f.rescan_btn -column 0 -row $current_row -padx $padding -pady 8 -sticky "w"
     incr current_row
 
     ::completion::update_options_gui
@@ -387,7 +398,9 @@ proc ::completion::read_config {{filename completion.cfg}} {
 }
 
 proc ::completion::write_config {{filename completion.cfg}} {
-    if {[file exists $filename]} {
+    if { [file exists $filename] } {
+        set fp [open $filename r]
+        set had_to_create_file false
     } else {
         set filename [file join $::current_plugin_loadpath $filename]
         if {[file exists $filename]} {
@@ -494,6 +507,7 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
             ::completion::debug_msg "       name_without_extension = $name_without_extension" "loaded_externals"
         if {[string range $name_without_extension end-4 end] ne "-help"} {
             lappend ::all_externals $extension_path$name_without_extension
+            lappend ::loaded_libs $extension_path
         }
     }
     #do the same for each subfolder (recursively)
@@ -526,6 +540,8 @@ proc ::completion::add_user_externals {} {
         #    ::completion::add_user_externalsOnFolder $subdir 1
         #}
     }
+    #remove duplicates from the loaded_libs
+    set ::loaded_libs [lsort -unique $::loaded_libs]
 }
 
 # Reads objects from libs declared with startup flags (does anybody still use this?)
@@ -553,7 +569,9 @@ proc ::completion::add_user_customcompletions {} {
 #reads objects stored into monolithic files (*.pd_darwin, *.dll, *.pd_linux)
 proc ::completion::add_user_monolithiclist {} {
     ::completion::debug_msg "entering add user monolithic list" "entering_procs"
+        ::completion::debug_msg "::loaded_libs = $::loaded_libs" "loaded_externals"
     set userdir [file join $::current_plugin_loadpath "monolithic_objects"]
+
     # for each .txt file in /monolithic_objects
     foreach filename [glob -directory $userdir -nocomplain -types {f} -- \
                          *.txt] {
@@ -561,11 +579,19 @@ proc ::completion::add_user_monolithiclist {} {
         set fp [open $filename r]
         set file_data [read $fp]
         foreach line $file_data {
-            #::completion::debug_msg "line = $line"
-            lappend ::monolithic_externals [split $line /]
+
+            # gets the lib name from the string
+            set lib [lindex [split $line /] 0]
+            set lib ${lib}/ ;# turns libName into libName/
+
+            # only if the user actually have that library installed
+            if { [expr [lsearch -nocase $::loaded_libs $lib] >= 0 ] } {
+                lappend ::monolithic_externals [split $line /]
+            }
+
         }
         close $fp
-        ::completion::debug_msg "======monolithic=======\n$::monolithic_externals" "loaded_externals"
+        ::completion::debug_msg "======monolithic externals=======\n$::monolithic_externals" "loaded_externals"
     }
 }
 
@@ -972,7 +998,9 @@ proc ::completion::replace_text {args} {
     ::completion::debug_msg "===Entering replace_text" "entering_procs"
     set text ""
     ::completion::erase_text
-    if { !$::completion::config(auto_complete_libs) || ($::completion::config(auto_complete_libs) && $::is_shift_down) } {
+    if { ( !$::completion::config(auto_complete_libs) && !$::is_shift_down) ||
+         (  $::completion::config(auto_complete_libs) &&  $::is_shift_down) 
+         } {
         set args [split $args /]
         set args [lindex $args end]
     }

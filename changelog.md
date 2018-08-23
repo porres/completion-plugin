@@ -1,5 +1,18 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.45.0 (Henri Augusto)
+
+### new features
+* now you can use shift+enter when **auto complete library names** is *false* to complete the library name.
+* added a rescan button to the settings window
+* now the plugin detect which multi-object ('monolithic') libraries are actually installed before loading them into the completions
+* now the plugin has a readme.pd file that deken can open at startup
+
+### Bug fixes
+
+* Fixed a bug where you would get an error when trying to save the settings
+
+
 ## v0.44.0 (Henri Augusto)
 
 * *Major* overhaul and bugfix to the code to bring it up to working condition in par with pd 0.48 API.

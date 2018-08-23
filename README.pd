@@ -1,0 +1,28 @@
+#N canvas 353 15 728 821 10;
+#X text 66 109 1 - Create an object box and press tab. Then type poly
+to see the suggestions;
+#X obj 70 91 cnv 11 116 17 empty empty normal search 5 9 0 14 -1 -262144
+0;
+#X obj 70 201 cnv 11 130 17 empty empty skipping search 5 9 0 14 -1
+-262144 0;
+#X obj 70 361 cnv 11 150 17 empty empty monolithic search 5 9 0 14
+-1 -262144 0;
+#X text 65 575 https://github.com/HenriAugusto/completion-plugin;
+#X obj 69 46 cnv 11 476 17 empty empty Please restart pure data after installing the plugin
+2 9 0 14 -184748 -262144 0;
+#X text 210 201 searches starting with a "." (period);
+#X text 66 17 Pure Data Auto Complete TCL plugin;
+#X text 210 201 searches starting with a "." (period);
+#X obj 66 544 cnv 11 476 17 empty empty See the full readme on
+2 9 0 14 -2498 -262144 0;
+#X text 66 239 2 - Create an object box and press tab. Then type ".mfn"
+to find the [makefilename] object. It searches for anything that contains
+the 'm' \, 'f' and 'n' chars in that order., f 89;
+#X text 367 398 \,;
+#X text 231 361 searches starting with a " " (comma);
+#X text 387 361 \,;
+#X text 66 399 3 - Create an object box and press tab. Then type  demu
+to find the [demultiplex] object located in zexy. You need to load
+the desired library to use those objects because they are located inside
+a 'monolithic' distribution (.dll \, pd_linux or pd_darwin), f 78
+;

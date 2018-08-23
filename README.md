@@ -7,7 +7,7 @@ This Gui-Plugin enables auto-completion for [pure-data](http://puredata.info) ob
 
 Here is a link to the [original repo by Yvan Volochine](https://github.com/gusano/completion-plugin).
 
-## Screenshot
+## Gif
 
 ![PD AutoComplete Plugin gif](https://github.com/HenriAugusto/completion-plugin/blob/master/images/PD_completion-plugin_gif_demo.gif)
 
@@ -19,14 +19,14 @@ Here is a link to the [original repo by Yvan Volochine](https://github.com/gusan
 
  - just search for the completion-plugin on deken <3
 
-### Manually (not so easy but still easy way)
+### Manually (not so easy way)
 
  - just [download](https://github.com/HenriAugusto/completion-plugin/releases) the plugin and put the whole `PD-AutoComplete-plugin` folder anywhere and add it to your pd paths in **edit->Preferences->Path**
  - The easiest way is it on the "extras" folders of your pd install. If you do this you don't need to set the path.
  - Yet i recommend having a "shared extras" folder and add it to your PD Path. This way if you have more than 1 pd installs (example: if you've used the zip distributions to have more than one PD version)
 
 
-## Instructions:
+## How to use:
 
 Just hit the TAB key while typing into an object to trigger completion mode.
 
@@ -79,7 +79,8 @@ You can define useful stuff in any .txt inside the folder *custom_completions*. 
  - **auto complete library names:**
    - *on:* [list-abs/list-clip]
    - *off:* [list-clip]
-   - **When the "autocomplete libraries" option is disabled:** you can use shift+enter to type only the object name (withouh the library)*
+   - *When the "autocomplete libraries" option is *enabled*: you can use shift+enter to type obj with the library*
+   - *When the "autocomplete libraries" option is *disabled*: you can use shift+enter to type only the object name (withouh the library)*
 - **Number of lines to display:** number of completion suggestions the plugin will display
 - **Font size:** the size of the font used for the suggestions window
 - **Maximum scan depth:** how deep the plugin will look inside a search path.
@@ -87,11 +88,13 @@ You can define useful stuff in any .txt inside the folder *custom_completions*. 
    - So if you set a path to the iemguts folder and use a value of 1 for max scan depth it will only scan the stuff inside the *iemguts/* folder. If you set 2 or more it will also scan *iemguts/examples*
 - **bkg color options:** change the background color for each search mode.
 
+- **rescan:** update the completions after you installed/uninstalled externals.
+- **default:** reset the plugin settings to the default
+- **save to file:** save your settings to the HD. The settings are saved in the `completion.cfg` config file. 
+   - Even if you change the pluging settings the new settings won't be remembered between pd sessions unless you save them to the file.
+
 Settings are applied immediately after you change them but are only saved when you click "save to file". That means unless you save them the next time you run PD the plugin will use the previous settings.
 
-### Config file
-
-The settings are saved in the `completion.cfg` config file.
 
 ### Development 
 
