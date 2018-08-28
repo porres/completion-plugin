@@ -1,15 +1,15 @@
 ## completion-plugin development guide
 
 The original version was developed by Yvan Volochine a long ago (as the time of writing: 7 years ago). I then embraced the project and i'm willing to mantain it for as long as i can.
-I will be hosting it on ![github](https://github.com/HenriAugusto/completion-plugin)
+I will be hosting it on [github](https://github.com/HenriAugusto/completion-plugin)
 
 I wrote this as a guide to make easier to people to colaborate on the completion-plugin. Specially if they're new to TCL (as i was when i took the project) that might help a lot.
 
 ## TCL
 
-First of all i wanna point that this one is the most newbie-friendly among the TCL documentation: ![TCL Tutorial](http://www.tcl.tk/man/tcl8.5/tutorial/tcltutorial.html)
+First of all i wanna point that this one is the most newbie-friendly among the TCL documentation: [TCL Tutorial](http://www.tcl.tk/man/tcl8.5/tutorial/tcltutorial.html)
 
-Also don't miss this one specific to Pure Data![GUIPlugins](https://puredata.info/docs/guiplugins/GUIPlugins/)
+Also don't miss this one specific to Pure Data [GUIPlugins](https://puredata.info/docs/guiplugins/GUIPlugins/)
 
 ### Some important things i will break down here
 
@@ -78,4 +78,4 @@ Of course if *::completion_debug * is set to 0 (or false) no debug message will 
 
 ### Useful links
 
-![List of keysyms you can use to bind keyevents](https://www.tcl.tk/man/tcl8.5/TkCmd/keysyms.htm)
+[List of keysyms you can use to bind keyevents](https://www.tcl.tk/man/tcl8.5/TkCmd/keysyms.htm)
