@@ -18,6 +18,9 @@ Here is a link to the [original repo by Yvan Volochine](https://github.com/gusan
 ### Deken (easy way)
 
  - just search for the completion-plugin on deken <3
+ - **you need at least Deken 0.3.1** to download the completion plugin. **Pd-0.48-1 comes with deken-0.2.4**! So either
+    - download Pd-0.48-2
+    - open Deken on PD 0.48-1 or older and search for deken. Then install the newer Deken version through Deken.
 
 ### Manually (not so easy way)
 
@@ -95,7 +98,7 @@ You can define useful stuff in any .txt inside the folder *custom_completions*. 
 - **save to file:** save your settings to the HD. The settings are saved in the `completion.cfg` config file. 
    - Even if you change the pluging settings the new settings won't be remembered between pd sessions unless you save them to the file.
 
-Settings are applied immediately after you change them but are only saved when you click "save to file". That means unless you save them the next time you run PD the plugin will use the previous settings.
+Settings are applied immediately after you change them but are only saved when you click "save to file". That means, unless you save them to the file, the next time you run PD the plugin will use the previous settings.
 
 
 ### Development 
