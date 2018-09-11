@@ -1,5 +1,19 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.46.0 (Henri Augusto)
+
+### new features
+
+* added help button on settings that opens the help patch.
+
+### Bug fixes
+
+* popup is now destroyed when it loses keyboard focus
+* now the plugin won't be triggered when the user is typing on comments
+* complying with pd 0.49 now we add our setting menu to file->preferences instead of the duplicated (and now gone) edit->preferences
+* fixed a bug where scrolling with the mouse wheel was calling choose_selected. Fixed by checking `%b eq 1` inside the <ButtonRelease> event!
+
+
 ## v0.45.0 (Henri Augusto)
 
 ### new features

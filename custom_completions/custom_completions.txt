@@ -6,6 +6,8 @@
 
 ;some useful stuff used in message boxes
 
+set
+add
 add2
 addcomma
 addsemi

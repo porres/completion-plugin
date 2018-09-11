@@ -18,10 +18,13 @@ Here is a link to the [original repo by Yvan Volochine](https://github.com/gusan
 ### Deken (easy way)
 
  - just search for the completion-plugin on deken <3
+ - **you need at least Deken 0.3.1** to download the completion plugin. **Pd-0.48-1 comes with deken-0.2.4**! So either
+    - download Pd-0.48-2
+    - open Deken on PD 0.48-1 or older and search for deken. Then install the newer Deken version through Deken.
 
 ### Manually (not so easy way)
 
- - just [download](https://github.com/HenriAugusto/completion-plugin/releases) the plugin and put the whole `PD-AutoComplete-plugin` folder anywhere and add it to your pd paths in **edit->Preferences->Path**
+ - just [download](https://github.com/HenriAugusto/completion-plugin/releases) the plugin and put the whole `PD-AutoComplete-plugin` folder anywhere and add it to your pd paths in **file->Preferences->Path**
  - The easiest way is it on the "extras" folders of your pd install. If you do this you don't need to set the path.
  - Yet i recommend having a "shared extras" folder and add it to your PD Path. This way if you have more than 1 pd installs (example: if you've used the zip distributions to have more than one PD version)
 
@@ -48,15 +51,15 @@ How to use each one:
 
 ### Externals scanning
 
-The plugin intelligently scans the paths set by the user (edit->preferences->path) to scan for externals without the need for the user to type their name on a file. Consequently the script doesn't need a list of objects. 
+The plugin intelligently scans the paths set by the user (file->preferences->path) to scan for externals without the need for the user to type their name on a file. Consequently the script doesn't need a list of objects. 
 
-It searches the static default paths (ex: *C:/PureData/pd-0.48-0.msw/pd/extra/*) for libraries and then searches any path you've set in *edit->preferences->path* or that Deken have set for you.
+It searches the static default paths (ex: *C:/PureData/pd-0.48-0.msw/pd/extra/*) for libraries and then searches any path you've set in *file->preferences->path* or that Deken have set for you.
 
 #### duplicates
 
 Some objects **by design** might be scanned twice as this reflects Pure Data objection instantiation.
 
-If you've ser for example the following folder in *edit->preferences->path*
+If you've ser for example the following folder in *file->preferences->path*
 
 ```
 C:/Users/Stravinsky/Dropbox/pd-0.48-0.msw/pd/extra/iemguts/
@@ -95,7 +98,7 @@ You can define useful stuff in any .txt inside the folder *custom_completions*. 
 - **save to file:** save your settings to the HD. The settings are saved in the `completion.cfg` config file. 
    - Even if you change the pluging settings the new settings won't be remembered between pd sessions unless you save them to the file.
 
-Settings are applied immediately after you change them but are only saved when you click "save to file". That means unless you save them the next time you run PD the plugin will use the previous settings.
+Settings are applied immediately after you change them but are only saved when you click "save to file". That means, unless you save them to the file, the next time you run PD the plugin will use the previous settings.
 
 
 ### Development 

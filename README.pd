@@ -1,4 +1,4 @@
-#N canvas 353 15 728 821 10;
+#N canvas 353 15 728 715 10;
 #X text 66 109 1 - Create an object box and press tab. Then type poly
 to see the suggestions;
 #X obj 70 91 cnv 11 116 17 empty empty normal search 5 9 0 14 -1 -262144

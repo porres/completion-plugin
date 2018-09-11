@@ -49,7 +49,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.45.0"
+set ::completion::plugin_version "0.46.0"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
@@ -88,14 +88,15 @@ set ::is_alt_down 0
 #1 = true 0 = false
 set ::completion_debug 0 ;
 # debug categories
-set ::debug_loaded_externals 1 ;#prints loaded externals
-set ::debug_entering_procs 1 ;#prints a message when entering a proc
-set ::debug_key_event 1 ;#prints a message when a key event is processed
-set ::debug_searches 1 ;#messages about the performed searches
-set ::debug_popup_gui 1 ;#messages related to the popup containing the code suggestions
-set ::debug_char_manipulation 1 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
-set ::debug_unique_names 1 ;#messages related to storing [send/receive] names [tabread] names and alike.
-set ::debug_settings 1 ;#messages related to storing [send/receive] names [tabread] names and alike.
+set ::debug_loaded_externals 0 ;#prints loaded externals
+set ::debug_entering_procs 0 ;#prints a message when entering a proc
+set ::debug_key_event 0 ;#prints a message when a key event is processed
+set ::debug_searches 0 ;#messages about the performed searches
+set ::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
+set ::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
+set ::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
+set ::debug_settings 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
+set ::debug_prefix 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
 
 #0 = normal
 #1 = skipping
@@ -121,6 +122,7 @@ proc ::completion::debug_msg {dbgMsg {debugKey "none"}} {
         "char_manipulation" { if { !$::debug_char_manipulation } { return  } }
         "unique_names" { if { !$::debug_unique_names } { return  } }
         "settings" { if { !$::debug_settings } { return  } }
+        "prefix" { if { !$::debug_prefix } { return  } }
     }
     if { $::completion_debug } {
         ::pdwindow::post "autocmpl_dbg: $dbgMsg\n"
@@ -191,7 +193,7 @@ proc ::completion::init_options_menu {} {
     if {$::windowingsystem eq "aqua"} {
         set mymenu .menubar.apple.preferences
     } else {
-        set mymenu .menubar.edit.preferences    
+        set mymenu .menubar.file.preferences    
     }
     
     if { [catch {
@@ -200,6 +202,12 @@ proc ::completion::init_options_menu {} {
         $mymenu add separator
         $mymenu add command -label [_ "Auto Complete settings"] -command {::completion::show_options_gui}
     }
+}
+
+proc ::completion::open_help_file {} {
+    set filename [file join $::current_plugin_loadpath "README.pd"]
+    #::completion::debug_msg "help file = $filename"
+    open_file "$filename"
 }
 
 proc ::completion::show_options_gui {} {
@@ -262,6 +270,10 @@ proc ::completion::show_options_gui {} {
     button .options.f.save_btn -text "save to file" -command ::completion::write_config
     button .options.f.default_btn -text "default" -command ::completion::restore_default_option
     button .options.f.rescan_btn -text "rescan" -command ::completion::scan_all_completions
+    button .options.f.help_btn -text "help" -command ::completion::open_help_file
+    #.options.f.help_btn configure -font {-family courier -size 12 -weight bold -slant italic}
+    .options.f.help_btn configure -font {-weight bold}
+
 
     set padding 2
 
@@ -315,11 +327,13 @@ proc ::completion::show_options_gui {} {
     incr current_row
     
     # Status labels and buttons
-    grid .options.f.status_label -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
+    #Is the status label used?
+    #grid .options.f.status_label -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
     grid .options.f.default_btn -column 1 -row $current_row -padx $padding -pady 8 -sticky "e"
     grid .options.f.save_btn -column 2 -row $current_row -padx $padding -pady 8 -sticky "w"
-    grid .options.f.rescan_btn -column 0 -row $current_row -padx $padding -pady 8 -sticky "w"
+    grid .options.f.help_btn -column 0 -row $current_row -padx $padding -pady 8 -sticky "w"
     incr current_row
+    grid .options.f.rescan_btn -column 2 -row $current_row -padx $padding -pady 4 -sticky "ew"
 
     ::completion::update_options_gui
 }
@@ -616,6 +630,7 @@ proc ::completion::read_completionslist_file {afile} {
 # this is called when the user enters the auto completion mode
 proc ::completion::trigger {} {
     ::completion::debug_msg "===entering trigger===" "entering_procs"
+        
     set ::is_shift_down 0
     set ::is_ctrl_down 0
     set ::is_alt_down 0
@@ -629,32 +644,48 @@ proc ::completion::trigger {} {
         ::completion::trimspaces
         ::completion::debug_msg "Text that was already in the box = $::current_text\n" "searches"
     }
+
     #if the user is typing into an object box
     if {$::new_object} {
-        bind $::current_canvas <KeyRelease> {::completion::text_keys %K}
-        if {![winfo exists .pop]} {
-            ::completion::popup_draw
-            ::completion::search $::current_text
-            ::completion::try_common_prefix
-            ::completion::update_completions_gui
-            if {[::completion::unique] } {
-                ::completion::choose_selected ;#Henri: was replace_text. This is needed for the three modes
-                ::completion::popup_destroy
-                ::completion::set_empty_listbox
+
+            # detect if the user is typing on an object, message or comment
+            set ::tags_on_object_being_edited [$::current_canvas itemcget $::current_tag -tags]
+                ::completion::debug_msg "\[$::current_canvas itemcget $::current_tag -tags\] = $::tags_on_object_being_edited"
+            set ::type_of_object_being_edited [lindex $::tags_on_object_being_edited 1]
+                ::completion::debug_msg "------>::type_of_object_being_edited = $::type_of_object_being_edited \n"
+            if { ($::type_of_object_being_edited ne "obj") && ($::type_of_object_being_edited ne "msg") } {
+                ::completion::debug_msg "the completion-plugin does not trigger for objects of type $::type_of_object_being_edited"
+                return
             }
-        } {
-            if {[::completion::unique]} {
-                ::completion::choose_selected
-            } elseif { [llength $::completions] > 1 } {
-                if {![::completion::try_common_prefix]} {
-                    ::pdwindow::post "IF not common prefix\n"
-                    #Henri: this would allow to cycle through the completions with Tab. I'm disabling that in favor of the arrow keys
-                    #::completion::increment
-                } else {
-                    ::pdwindow::post "IF INDEED common prefix\n"
-                }
+
+            bind $::current_canvas <KeyRelease> {::completion::text_keys %K}
+            if {![winfo exists .pop]} {
+                    ::completion::popup_draw
+                    ::completion::search $::current_text
+                    ::completion::try_common_prefix
+                    ::completion::update_completions_gui
+                    if {[::completion::unique] } {
+                        ::completion::choose_selected ;#Henri: was replace_text. This is needed for the three modes
+                        ::completion::popup_destroy
+                        ::completion::set_empty_listbox
+                    }
+            } else {
+                    
+                    if {[::completion::unique]} {
+                        ::completion::choose_selected
+                    } elseif { [llength $::completions] > 1 } {
+                        if {![::completion::try_common_prefix]} {
+                            ::completion::debug_msg "IF not common prefix\n"
+                            #::completion::increment ;#Henri: this would allow to cycle through the completions with Tab. I'm disabling that in favor of the arrow keys
+                        } else {
+                            ::completion::debug_msg "IF INDEED common prefix\n"
+                        }
+                    }
             }
-        }
+            bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"}
+            bind .pop <FocusOut> {::completion::debug_msg "the user has unfocused the popup"; ::completion::popup_destroy }
+    } else {
+        ::completion::debug_msg "the user is NOT typing into an object box" "key_event"
     }
 }
 
@@ -819,7 +850,8 @@ proc ::completion::increment {{amount 1}} {
 proc ::completion_store {tag} {
     # I'm disabling the unique names completion for now because i don't think it is desireable.
     # While it does detects when the user type a new name it **doesn't** when those names are not 
-    # used any more (user closed their containing patch, deleted their objects, etc). 
+    # used any more (user closed their containing patch, deleted their objects, etc).
+    # Also it doesn't detect those names when the user loads an patch.
     # In future versions we should be able to do that communicating with PD directly.
     return
     ::completion::debug_msg "entering completion store" "entering_procs"
@@ -1126,7 +1158,13 @@ proc ::completion::popup_draw {} {
         bind .pop.f.lb <Escape> {after idle { ::completion::popup_destroy 1 }}
         bind .pop.f.lb <KeyRelease> {::completion::lb_keys %K}
         bind .pop.f.lb <Key> {after idle {::completion::key_presses %K}}
-        bind .pop.f.lb <ButtonRelease> {after idle {::completion::choose_selected}}
+        # ButtonReleases:
+        # LMB = 1    MMB (click) = 2     RMB = 3   ScrollUp = 4    ScrollDown = 5
+        bind .pop.f.lb <ButtonRelease> {
+            if { %b eq 1} {
+                after idle {::completion::choose_selected}                
+            }
+        }
 
         # Overriding the Up and Down key due to a bug:
         # the .pop.f.lb selection set $updated call in ::completion::increment 
@@ -1265,6 +1303,7 @@ proc pdtk_text_editing {mytoplevel tag editing} {
 # `prefix' from Bruce Hartweg <http://wiki.tcl.tk/44>
 proc ::completion::prefix {s1 s2} {
     regexp {^(.*).*\0\1} "$s1\0$s2" all pref
+    ::completion::debug_msg "prefix output = $pref" "prefix"
     return $pref
 }
 
@@ -1278,6 +1317,7 @@ proc ::completion::try_common_prefix {} {
         set ::current_text $prefix
         set found 1
     }
+    ::completion::debug_msg "try common prefix output = $found" "prefix"
     return $found
 }
 
@@ -1288,6 +1328,7 @@ proc ::completion::common_prefix {} {
                         [lindex $::completions 0] \
                         [lindex $::completions end]]
     }
+    ::completion::debug_msg "common prefix output = $prefix" "prefix"
     return $prefix
 }
 
