@@ -49,7 +49,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.46.0"
+set ::completion::plugin_version "0.46.1"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
