@@ -1,5 +1,11 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.46.1 (Henri Augusto)
+
+### Bug fixes
+
+* fixes a bug where the plugin tried to bind to _.pop_ after auto completing when **::completion::unique** was true.
+
 ## v0.46.0 (Henri Augusto)
 
 ### new features

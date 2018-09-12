@@ -659,6 +659,7 @@ proc ::completion::trigger {} {
             }
 
             bind $::current_canvas <KeyRelease> {::completion::text_keys %K}
+            set completed_because_was_unique 0
             if {![winfo exists .pop]} {
                     ::completion::popup_draw
                     ::completion::search $::current_text
@@ -668,11 +669,13 @@ proc ::completion::trigger {} {
                         ::completion::choose_selected ;#Henri: was replace_text. This is needed for the three modes
                         ::completion::popup_destroy
                         ::completion::set_empty_listbox
+                        set completed_because_was_unique 1
                     }
             } else {
                     
                     if {[::completion::unique]} {
                         ::completion::choose_selected
+                        set completed_because_was_unique 1
                     } elseif { [llength $::completions] > 1 } {
                         if {![::completion::try_common_prefix]} {
                             ::completion::debug_msg "IF not common prefix\n"
@@ -682,8 +685,11 @@ proc ::completion::trigger {} {
                         }
                     }
             }
-            bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"}
-            bind .pop <FocusOut> {::completion::debug_msg "the user has unfocused the popup"; ::completion::popup_destroy }
+            # if the unique completion was used there will be no .pop to bind!
+            if { !$completed_because_was_unique } {
+                bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"}
+                bind .pop <FocusOut> {::completion::debug_msg "the user has unfocused the popup"; ::completion::popup_destroy }
+            }
     } else {
         ::completion::debug_msg "the user is NOT typing into an object box" "key_event"
     }
