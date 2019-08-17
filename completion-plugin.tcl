@@ -23,7 +23,7 @@
 # TODO
 # - add user arguments (tabread $1 ...)
 
-# The original version was developed by Yvan Volochine a long ago (as the time of writing: 7 years ago)
+# The original version was developed by Yvan Volochine a long time ago (as the time of writing: 7 years ago)
 # I then embraced the project and i'm willing to mantain it for as long as i can. 
 # Right now i'm kind of new to .tcl so i'm trying to stay true to the original code.
 # When reasonable i will comment talking about changes i did and why.
@@ -49,7 +49,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.46.1"
+set ::completion::plugin_version "0.47.0-test1"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
@@ -91,7 +91,7 @@ set ::completion_debug 0 ;
 set ::debug_loaded_externals 0 ;#prints loaded externals
 set ::debug_entering_procs 0 ;#prints a message when entering a proc
 set ::debug_key_event 0 ;#prints a message when a key event is processed
-set ::debug_searches 0 ;#messages about the performed searches
+set ::debug_searches 1 ;#messages about the performed searches
 set ::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
 set ::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
 set ::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
@@ -159,6 +159,7 @@ proc ::completion::read_extras_henri {} {
 
 #called once upon plugin initialization
 proc ::completion::init {} {
+    set initTime [clock milliseconds]
     variable external_filetype
     ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
     ::completion::read_config
@@ -168,9 +169,21 @@ proc ::completion::init {} {
         "win32" { set external_filetype *.dll}
         "x11"   { set external_filetype *.pd_linux }
     }
-    bind all <Tab> {+::completion::trigger}
+    #bind all <Tab> {+::completion::trigger}
+    if {[catch {bind all <$completion::config(hotkey)> {+::completion::trigger}} err]} {
+        ::pdwindow::post "\n---Error while trying to bind the completion plugin hotkey---\n"
+        ::pdwindow::post "      hotkey: $::completion::config(hotkey)\n"
+        ::pdwindow::post "      err: $err\n\n"
+    }
+    
+    
     ::completion::scan_all_completions
     ::completion::init_options_menu
+    set finalTime [clock milliseconds]
+    set delta [expr {$finalTime-$initTime}]
+    set count [llength $::all_externals]
+    set count [expr {$count+[llength $::monolithic_externals]}]
+    ::pdwindow::post "\[completion-plugin\] loaded $count completions in $delta milliseconds\n"
 }
 
 proc ::completion::scan_all_completions {} {
@@ -178,7 +191,7 @@ proc ::completion::scan_all_completions {} {
     pipe + - * / pow == != > < >= <= & && | || % << >> mtof powtodb rmstodb ftom dbtopow dbtorms mod div sin cos tan atan atan2 sqrt log exp abs random max min clip wrap notein ctlin pgmin bendin touchin polytouchin midiin sysexin midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout midiout makenote stripnote \
     oscparse oscformat tabread tabread4 tabwrite soundfiler table array loadbang netsend netreceive glist textfile text openpanel savepanel bag poly key keyup keyname declare +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ q8_sqrt~ q8_rsqrt~ wrap~ fft~ ifft~ rfft~ rifft~ pow~ log~ exp~ abs~ framp~ mtof~ ftom~ rmstodb~ dbtorms~ dac~ adc~ sig~ line~ vline~ \
     threshdold~ snapshot~ vsnapshot~ bang~ samplerate~ send~ receive~ throw~ catch~ block~ switch~ readsf~ writesf~ phasor~ cos~ osc~ tabwrite~ tabplay~ tabread~ tabread4~ tabosc4~ tabsend~ tabreceive~ vcf~ noise~ env~ hip~ lop~ bp~ biquad~ samphold~ print~ rpole~ rzero~ rzero_rev~ cpole~ czero~ czero_rev~ delwrite~ delread~ delread4~ vd~ inlet outlet inlet~ outlet~ clone \
-    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~}
+    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~ namecanvas savestate pdcontrol slop~}
     set ::monolithic_externals {}
     ::completion::add_user_externals
     #::completion::add_libraries_externals_from_startup_flags
@@ -186,6 +199,7 @@ proc ::completion::scan_all_completions {} {
     ::completion::add_user_monolithiclist
     set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
     set ::all_externals [lsort $::all_externals]
+    ::completion::add_special_messages ;#AFTER sorting
     ::pdwindow::post "\[completion-plugin\] finished scanning externals\n"
 }
 
@@ -265,6 +279,14 @@ proc ::completion::show_options_gui {} {
 
     spinbox .options.f.font_size -width 6 -from 7 -to 20 -textvariable ::completion::config(font_size)
     label .options.f.font_size_label -text "font size"
+
+    #Hotkey
+    label .options.f.hotkeylabel -text "hotkey (require save&restart)"
+    entry .options.f.hotkeyentry -width 22
+    .options.f.hotkeyentry insert 0 "$::completion::config(hotkey)"
+    bind .options.f.hotkeyentry <KeyRelease> {
+        set ::completion::config(hotkey) [.options.f.hotkeyentry get]
+    }
     
     #Buttons
     button .options.f.save_btn -text "save to file" -command ::completion::write_config
@@ -326,6 +348,11 @@ proc ::completion::show_options_gui {} {
     grid .options.f.mono_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
     incr current_row
     
+    #hotkey stuff
+    grid .options.f.hotkeylabel -column 0 -row $current_row -padx $padding -pady $padding
+    grid .options.f.hotkeyentry -column 1 -row $current_row -padx $padding -pady $padding
+    incr current_row
+
     # Status labels and buttons
     #Is the status label used?
     #grid .options.f.status_label -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
@@ -352,6 +379,7 @@ proc ::completion::update_options_gui {} {
 }
 
 proc ::completion::restore_default_option {} {
+    set ::completion::config(hotkey) "Control-space"
     set ::completion::config(max_lines) 20
     set ::completion::config(font) "DejaVu Sans Mono"
     set ::completion::config(font_size) 8
@@ -430,6 +458,7 @@ proc ::completion::write_config {{filename completion.cfg}} {
     close $fp
 
     #process the lines
+    set lines [::completion::write_config_variable $lines "hotkey"]
     set lines [::completion::write_config_variable $lines "max_lines"]
     set lines [::completion::write_config_variable $lines "font"]
     set lines [::completion::write_config_variable $lines "font_size"]
@@ -715,6 +744,7 @@ proc ::completion::monolithic_search {{text ""}} {
     }
     #::completion::debug_msg "----------results=\[$results"
     set pattern "$text"
+    set pattern [::completion::fix_pattern $pattern]
     set ::completions [lsearch -all -inline -regexp -nocase $results $pattern]
 }
 
@@ -722,21 +752,26 @@ proc ::completion::skipping_search {{text ""}} {
     #set variables related to skipping_search
     ::completion::debug_msg "::completion::skipping_search($text)" "searches"
     set ::current_search_mode 1
+        # is this if necessary?
     if {[winfo exists .pop]} {
         .pop.f.lb configure -selectbackground $::completion::config(skipbg)
     }
     #do the search
     set text [string range $text 1 end]
+    set text [::completion::fix_pattern $text]
     set chars [split $text {}]
     set pattern ""
     foreach char $chars {
+        ::completion::debug_msg "--------------char = $char"
         set pattern "$pattern$char.*"
     }
     ::completion::debug_msg "RegExp pattern  = $pattern" "searches"
-    set ::completions [lsearch -all -inline -regexp -nocase $::all_externals $pattern]
     ::completion::debug_msg "--------------chars = $chars" "searches"
+    set ::completions [lsearch -all -inline -regexp -nocase $::all_externals $pattern]
 }
 
+# Searches for matches.
+# (this method detects the current search mode and returns after calling the right one it it happens to be monolithic or skipping.)
 proc ::completion::search {{text ""}} {
     ::completion::debug_msg "::completion::search($text)" "searches"
     ::completion::debug_msg "::completion_text_updated = $::completion_text_updated" "searches"
@@ -779,9 +814,8 @@ proc ::completion::search {{text ""}} {
     #using -regexp not allows for that
     #Also i've added case insensitive searching (since PD object creation IS case-insensitive).
     set pattern "$::current_text"
-    if { $pattern eq "+"} {
-        set pattern "\\+" ;# prevents an error when searching for "+"
-    }
+    set pattern [::completion::fix_pattern $pattern]
+
     set ::completions [lsearch -all -inline -regexp -nocase $::all_externals $pattern]
     if {$::should_restore} {
         set ::current_text $::previous_current_text ;# restores the current text
@@ -789,6 +823,25 @@ proc ::completion::search {{text ""}} {
     }
     ::completion::update_completions_gui
     ::completion::debug_msg "SEARCH END! Current text is $::current_text" "searches"
+}
+
+# This is a method that edits a string used as a regex pattern escaping chars in order to correcly compile the regexp;
+# example: we must escape "++" to "\\+\\+". 
+proc ::completion::fix_pattern {pattern} {
+        ::completion::debug_msg "================== - pattern = $pattern"
+    set pattern [string map {"+" "\\+"} $pattern]
+        ::completion::debug_msg "+ - pattern = $pattern"
+    set pattern [string map {"*" "\\*"} $pattern]
+        ::completion::debug_msg "* - pattern = $pattern"
+    set skippingPrefix [string range $pattern 0 0]
+        ::completion::debug_msg "skippingPrefix = $skippingPrefix"
+    set skippingString [string range $pattern 1 end]
+        ::completion::debug_msg "skippingString = $skippingString"
+    set skippingString [string map {"." "\\."} $skippingString]
+        ::completion::debug_msg ". skippingString = $skippingString"
+    set pattern "$skippingPrefix$skippingString"
+        ::completion::debug_msg ". - pattern = $pattern"
+    return $pattern
 }
 
 proc ::completion::update_completions_gui {} {
@@ -913,7 +966,73 @@ proc ::completion::choose_selected {} {
             # I'm addind this line just to have the option to print the lib name on the console but i don't think this is needed it apperas on the completions list.
             #::pdwindow::post "auto complete: [lindex [split $choosen_item /] 0] is part of the $libName library\n\n"
         }
-        ::completion::replace_text $choosen_item
+        ::completion::erase_text ;#before replacing
+        set isSpecialMsg [::completion::run_special_messages $choosen_item]
+        if { $isSpecialMsg } {
+            #add code to delete the select object in the canvas?
+            
+            #$::current_canvas configure -bg #00ff00
+            set rectangle "$::current_tag"
+            append rectangle "R"
+            ::completion::debug_msg "rectangle = $rectangle\n"
+            
+            $::current_canvas itemconfigure $rectangle -fill red
+
+            #mimicking PD messages (using -d 1)
+            # pdtk_undomenu $::current_canvas clear no
+            # pdtk_undomenu $::current_canvas clear no
+            # $::current_canvas itemconfigure $rectangle -fill black
+            # $::current_canvas itemconfigure $::current_tag -fill black
+            # pdtk_undomenu $::current_canvas clear no
+
+            #$::current_canvas delete $::current_tag ;#THIS ACTUALLY REMOVES THE TEXT THE USER IS TYPING
+            #$::current_canvas delete $rectangle ;#THIS removes the rectangle
+
+            #BUT they are created again when i exit exit mode
+            #BUT they are created again when i exit exit mode
+            #BUT they are created again when i exit exit mode
+
+            set coords [$::current_canvas coords $rectangle]
+            ::completion::debug_msg "coords = $coords\n"
+
+                ::completion::debug_msg "::current_canvas = $::current_canvas\n"
+            set winfo_test "[winfo toplevel $::current_canvas]"
+                ::completion::debug_msg "winfo_test = $winfo_test\n"
+
+            set x [lindex $coords 0]
+                set x [expr {$x-3}]
+            set y [lindex $coords 1]
+                set y [expr {$y-3}]
+            set w 75
+            set h 75
+            ::completion::debug_msg "x = $x\n"
+            ::completion::debug_msg "y = $y\n"
+            ::completion::debug_msg "w = $w\n"
+            ::completion::debug_msg "h = $h\n"
+            ::completion::debug_msg "\[expr \{$x+$w\}\] = [expr {$x+$w}]\n"
+
+            
+            pdsend "[winfo toplevel $::current_canvas] motion $x $y 0"
+            pdsend "[winfo toplevel $::current_canvas] mouse $x $y 1 0"
+            pdsend "[winfo toplevel $::current_canvas] motion [expr {$x+$w}] [expr {$y+$h}] 0"
+            pdsend "[winfo toplevel $::current_canvas] mouseup [expr {$x+$w}] [expr {$y+$h}] 1"
+
+            
+            pdsend "[winfo toplevel $::current_canvas] key 1 127 0" ;#delete = 127
+            pdsend "[winfo toplevel $::current_canvas] key 0 127 0" ;
+            #pdsend "[winfo toplevel $::current_canvas] text 0" ;
+
+            #WORK AROUND
+
+            #QUERY INFORMATION ABOUT THE $rectlange position and mimic mouse and keyboard behavior (ghostPatching) by sendin input messages do pd engine to delete the object!
+
+            #$::current_canvas itemconfigure $::current_tag TK_CONFIG_COLOR #ff0000
+            
+            #$::current_canvas delete "all" ;#delete everything but the selected object is recreated
+
+        } else {
+            ::completion::replace_text $choosen_item            
+        }
         ::completion::debug_msg "----------->Selected word: $choosen_item" "char_manipulation"
         set ::current_text "" ;# clear for next search
         ::completion::set_empty_listbox
@@ -1025,7 +1144,7 @@ proc ::completion::erase_text {} {
 # this is the proc that types the object name for the user. It runs in two steps
 # 1: by erasing what the user typed (calling erase_text)
 # 2: typing the match chosen by the user
-# Why not just send the remaining chars? It would not make sense in "skip" search mode!
+# Why not just send the remaining chars, you ask? It would not make sense in "skip" search mode!
 # You might also wonder why not use
 #       pdtk_text_selectall $::current_canvas $::current_tag
 #                               OR
@@ -1035,7 +1154,6 @@ proc ::completion::erase_text {} {
 proc ::completion::replace_text {args} {
     ::completion::debug_msg "===Entering replace_text" "entering_procs"
     set text ""
-    ::completion::erase_text
     if { ( !$::completion::config(auto_complete_libs) && !$::is_shift_down) ||
          (  $::completion::config(auto_complete_libs) &&  $::is_shift_down) 
          } {
@@ -1058,6 +1176,35 @@ proc ::completion::replace_text {args} {
     # we typed the text although we faked it so pd gets it as well (mmh)
     set ::completion_text_updated 1
     #set ::current_text "" ; Not needed because choose_selected will empty that
+}
+
+proc ::completion::run_special_messages { msg } {
+    switch -- $msg {
+        "plugin::rescan" {
+             ::completion::scan_all_completions 
+             return 1
+        }
+        "plugin::options" {
+            ::completion::show_options_gui
+            return 1
+        }
+        "plugin::help" {
+            ::completion::open_help_file
+            return 1
+        }
+        "plugin::debug" {
+            set ::completion_debug [expr {!$::completion_debug}]
+            return 1
+        }
+    }
+    return 0
+}
+
+proc ::completion::add_special_messages {} {
+    set ::all_externals [linsert $::all_externals 0 "plugin::debug"]
+    set ::all_externals [linsert $::all_externals 0 "plugin::help"]
+    set ::all_externals [linsert $::all_externals 0 "plugin::options"]
+    set ::all_externals [linsert $::all_externals 0 "plugin::rescan"]
 }
 
 # called when user press Enter
@@ -1340,6 +1487,19 @@ proc ::completion::common_prefix {} {
 
 proc ::completion::trimspaces {} {
     set ::current_text [string trimright $::current_text " "]
+}
+
+# just for testing purposes. Code would need to become more robust before 
+# being used to display stuff for the user
+proc ::completion::msgbox {str} {
+    toplevel .cpMsgBox$str
+    frame .cpMsgBox$str.f
+    label .cpMsgBox$str.f.l -text "$str" -padx 3m -pady 2m
+    button .cpMsgBox$str.f.okbtn -text "okay" -command "destroy .cpMsgBox$str"
+    
+    pack .cpMsgBox$str.f
+    pack .cpMsgBox$str.f.l
+    pack .cpMsgBox$str.f.okbtn
 }
 
 
