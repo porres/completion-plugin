@@ -1,5 +1,26 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.47.0-test1 (Henri Augusto)
+
+### new features
+
+    - Changes realted to pd 0.50
+        - in this version the Tab key switches the selected object so now we bind the completion window to **Ctrl+SPace**
+          - aditionally you can change the binding in the configurations
+        - [pdcontrol] and [slop~] added to the vanilla object list
+    -now you can use the suggestion window to access functionality
+       - **completion::options**: open the options windows
+       - **completion::rescan**: rescan the externals
+       - **completion::help**: open the help patch
+       - **completion::debug**: enter and exit debug mode
+    - _the plugin automatically deletes the leftover object_
+      - that might be optional in the future
+      - it deletes the object by simulating user input. It is a **hack** so it will delete any object under the one you're typing
+
+### Bug fixes
+
+    -[namecanvas] suggestion, which was missing, was added
+
 ## v0.46.1 (Henri Augusto)
 
 ### Bug fixes
