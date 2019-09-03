@@ -49,7 +49,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.47.0-test1"
+set ::completion::plugin_version "0.47.0"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
@@ -84,14 +84,15 @@ set ::completion_text_updated 0
 set ::is_shift_down 0
 set ::is_ctrl_down 0
 set ::is_alt_down 0
+set ::waiting_trigger_keyrelease 0
 # =========== [DEBUG mode on/off] ============
 #1 = true 0 = false
 set ::completion_debug 0 ;
 # debug categories
 set ::debug_loaded_externals 0 ;#prints loaded externals
-set ::debug_entering_procs 0 ;#prints a message when entering a proc
+set ::debug_entering_procs 1 ;#prints a message when entering a proc
 set ::debug_key_event 0 ;#prints a message when a key event is processed
-set ::debug_searches 1 ;#messages about the performed searches
+set ::debug_searches 0 ;#messages about the performed searches
 set ::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
 set ::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
 set ::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
@@ -169,8 +170,7 @@ proc ::completion::init {} {
         "win32" { set external_filetype *.dll}
         "x11"   { set external_filetype *.pd_linux }
     }
-    #bind all <Tab> {+::completion::trigger}
-    if {[catch {bind all <$completion::config(hotkey)> {+::completion::trigger}} err]} {
+    if {[catch {bind "completion-plugin" <$completion::config(hotkey)> {::completion::trigger; break;}} err]} {
         ::pdwindow::post "\n---Error while trying to bind the completion plugin hotkey---\n"
         ::pdwindow::post "      hotkey: $::completion::config(hotkey)\n"
         ::pdwindow::post "      err: $err\n\n"
@@ -659,6 +659,7 @@ proc ::completion::read_completionslist_file {afile} {
 # this is called when the user enters the auto completion mode
 proc ::completion::trigger {} {
     ::completion::debug_msg "===entering trigger===" "entering_procs"
+    set ::waiting_trigger_keyrelease 1
         
     set ::is_shift_down 0
     set ::is_ctrl_down 0
@@ -673,6 +674,11 @@ proc ::completion::trigger {} {
         ::completion::trimspaces
         ::completion::debug_msg "Text that was already in the box = $::current_text\n" "searches"
     }
+
+    ::completion::debug_msg "-----TRIGGER------\n"
+    ::completion::debug_msg "current_canvas: $::current_canvas\n"
+    set dbg [bindtags $::current_canvas]
+    ::completion::debug_msg "bindtags: $dbg\n"
 
     #if the user is typing into an object box
     if {$::new_object} {
@@ -716,11 +722,17 @@ proc ::completion::trigger {} {
             }
             # if the unique completion was used there will be no .pop to bind!
             if { !$completed_because_was_unique } {
-                bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"}
+                # work in progress
                 bind .pop <FocusOut> {::completion::debug_msg "the user has unfocused the popup"; ::completion::popup_destroy }
+                bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"} 
             }
     } else {
         ::completion::debug_msg "the user is NOT typing into an object box" "key_event"
+    }
+    # this should be time enough for the user to release the keys (so we don't capture the release keys of the plugin hotkey)
+    after 200 {
+        ::completion::debug_msg "accepting keys\n"
+        set ::waiting_trigger_keyrelease 0
     }
 }
 
@@ -828,19 +840,19 @@ proc ::completion::search {{text ""}} {
 # This is a method that edits a string used as a regex pattern escaping chars in order to correcly compile the regexp;
 # example: we must escape "++" to "\\+\\+". 
 proc ::completion::fix_pattern {pattern} {
-        ::completion::debug_msg "================== - pattern = $pattern"
+        ::completion::debug_msg "================== - pattern = $pattern" "searches"
     set pattern [string map {"+" "\\+"} $pattern]
-        ::completion::debug_msg "+ - pattern = $pattern"
+        ::completion::debug_msg "+ - pattern = $pattern" "searches"
     set pattern [string map {"*" "\\*"} $pattern]
-        ::completion::debug_msg "* - pattern = $pattern"
+        ::completion::debug_msg "* - pattern = $pattern" "searches"
     set skippingPrefix [string range $pattern 0 0]
-        ::completion::debug_msg "skippingPrefix = $skippingPrefix"
+        ::completion::debug_msg "skippingPrefix = $skippingPrefix" "searches"
     set skippingString [string range $pattern 1 end]
-        ::completion::debug_msg "skippingString = $skippingString"
+        ::completion::debug_msg "skippingString = $skippingString" "searches"
     set skippingString [string map {"." "\\."} $skippingString]
-        ::completion::debug_msg ". skippingString = $skippingString"
+        ::completion::debug_msg ". skippingString = $skippingString" "searches"
     set pattern "$skippingPrefix$skippingString"
-        ::completion::debug_msg ". - pattern = $pattern"
+        ::completion::debug_msg ". - pattern = $pattern" "searches"
     return $pattern
 }
 
@@ -1054,8 +1066,11 @@ proc ::completion::update_modifiers {key pressed_or_released} {
     }
 }
 
-proc ::completion::key_presses {key} {
-    ::completion::debug_msg "key pressed was $key\n" "key_event"
+# receives <Key> events while listbox has focus
+# some stuff is passed correctly only on KeyRelease and other stuff only on KeyPress
+# so that's why there is both a lb_keyrelease and a lb_keypress procs
+proc ::completion::keypress {key unicode} {
+    ::completion::debug_msg "key pressed was $key.  Unicode = $unicode\n" "key_event"
     ::completion::update_modifiers $key 1
     if {$::is_shift_down} {
         switch -- $key {
@@ -1067,11 +1082,25 @@ proc ::completion::key_presses {key} {
             }
         }        
     }
+    # this is needed for users with keyboards in languages where ~ is a Multi_Key (ex: portuguese, french, etc) - only tested on PT-BR keyboard
+    # tested on Windows 7 with a pt-br keyboard. This unicode "~~" is not caught on key release
+    switch -- $unicode {
+        "~~" { ::completion::insert_key "~" }
+    }
 }
 
-# receives KeyReleases pressed while listbox has focus
-proc ::completion::lb_keys {key} {
-    ::completion::debug_msg "~lb_keys~ key released was $key\n" "key_event"
+# receives <KeyRelease> events while listbox has focus
+# some stuff is passed correctly only on KeyRelease and other stuff only on KeyPress
+# so that's why there is both a lb_keyrelease and a lb_keypress procs
+proc ::completion::lb_keyrelease {key unicode} {
+    ::completion::debug_msg "~lb_keys~ key released was $key    unicode = $unicode\n" "key_event"
+    # We don't want to receive a key if the user pressed the plugin-activation hotkey.
+    # otherwise (let's say the user is using Control+space as the hotkey) when the user activates the plugin it would output a space
+    # so when we get the keydown event we wait for the keyrelease and do nothing.
+    if {$::waiting_trigger_keyrelease eq 1} {
+        ::completion::debug_msg "got the key release. \[$key, $unicode\]\n"
+        return
+    }
     ::completion::update_modifiers $key 0
     set ::completion_text_updated 0
     #validate keys (currently we can't detect "~" in windows because it results in a "Multi_key")
@@ -1088,10 +1117,9 @@ proc ::completion::lb_keys {key} {
         "minus" { ::completion::insert_key "-" }
         "underscore" { ::completion::insert_key "_" }
     }
-
 }
 
-# keys from textbox
+# keys from textbox (the box where you tipe stuff in PD)
 proc ::completion::text_keys {key} {
     ::completion::debug_msg "~text_keys~ key pressed was $key\n" "key_event"
     set ::completion_text_updated 0
@@ -1113,6 +1141,7 @@ proc ::completion::text_keys {key} {
 
 # this inserts the key
 proc ::completion::insert_key {key} {
+    ::completion::debug_msg "entering ::completion::insert_key" "entering_procs"
     scan $key %c keynum
     # pdsend "pd key 1 $keynum 0" ; notworking
     ::completion::sendKeyDown $keynum
@@ -1309,8 +1338,8 @@ proc ::completion::popup_draw {} {
         pack .pop.f.lb [scrollbar ".pop.f.sb" -command [list .pop.f.lb yview] -takefocus 0] \
             -side left -fill y -anchor w
         bind .pop.f.lb <Escape> {after idle { ::completion::popup_destroy 1 }}
-        bind .pop.f.lb <KeyRelease> {::completion::lb_keys %K}
-        bind .pop.f.lb <Key> {after idle {::completion::key_presses %K}}
+        bind .pop.f.lb <KeyRelease> {::completion::lb_keyrelease %K %A}
+        bind .pop.f.lb <Key> {after idle {::completion::keypress %K %A}}
         # ButtonReleases:
         # LMB = 1    MMB (click) = 2     RMB = 3   ScrollUp = 4    ScrollDown = 5
         bind .pop.f.lb <ButtonRelease> {
@@ -1443,6 +1472,18 @@ proc pdtk_text_editing {mytoplevel tag editing} {
             }
             set ::current_tag $tag
         }
+
+        if {[string first "completion-plugin" [bindtags $::current_canvas] ] eq -1} {
+            bindtags $::current_canvas "completion-plugin [bindtags $::current_canvas]"
+        }
+        #delete_if {[string first [bindtags $::current_canvas] "test"] eq -1} {
+        #delete_    bindtags $::current_canvas "test [bindtags $::current_canvas]"
+        #delete_}
+        #delete_#bind $::current_canvas <$completion::config(hotkey)> {+::completion::trigger;break;}
+        #delete_::pdwindow::post "-----EDITING------\n"
+        #delete_::pdwindow::post "current_canvas: $::current_canvas\n"
+        #delete_set dbg [bindtags $::current_canvas]
+        #delete_::pdwindow::post "bindtags: $dbg\n"
     }
     set ::new_object $editing
     $tkcanvas focus $tag
