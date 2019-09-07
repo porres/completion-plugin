@@ -23,6 +23,8 @@
 # TODO
 # - add user arguments (tabread $1 ...)
 
+# ==========================================
+
 # The original version was developed by Yvan Volochine a long time ago (as the time of writing: 7 years ago)
 # I then embraced the project and i'm willing to mantain it for as long as i can. 
 # Right now i'm kind of new to .tcl so i'm trying to stay true to the original code.
@@ -44,7 +46,6 @@ namespace eval ::completion:: {
 ###########################################################
 # overwritten
 rename pdtk_text_editing pdtk_text_editing_old
-#rename ::dialog_font::ok ::dialog_font::ok_old ;#now that we have an settings window we don't need that
 
 ############################################################
 # GLOBALS
@@ -64,12 +65,10 @@ set ::completion::config(offset) 0
 set ::completion::config(max_scan_depth) 1
 set ::completion::config(auto_complete_libs) 1
 
-# some nice colors to try
-#0a85fe   #0ad871   #9832ff
+# some nice colors to try: #0a85fe #0ad871 #9832ff ; those are great: #ff9831 #ff00ee #012345
 
-#ff9831   #ff00ee   #012345 #this one is great
+# private variables
 
-# private
 set ::toplevel ""
 set ::current_canvas ""
 set ::current_tag ""
@@ -91,7 +90,7 @@ set ::completion_debug 0 ;
 # debug categories
 set ::debug_loaded_externals 0 ;#prints loaded externals
 set ::debug_entering_procs 1 ;#prints a message when entering a proc
-set ::debug_key_event 0 ;#prints a message when a key event is processed
+set ::debug_key_event 1 ;#prints a message when a key event is processed
 set ::debug_searches 0 ;#messages about the performed searches
 set ::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
 set ::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
@@ -144,20 +143,6 @@ proc ::completion::sendKeyDownAndUp {keynum} {
     pdsend "[winfo toplevel $::current_canvas] key 0 $keynum 0"
 }
 
-#Henri: reads the files located in each extra folder in order to add them
-proc ::completion::read_extras_henri {} {
-    ::completion::debug_msg "sys_searchpath = $::sys_searchpath"
-    set i 0
-    foreach folder $::sys_searchpath {
-        #::completion::debug_msg "folder $i"
-        #::completion::debug_msg "$folder"
-        set files [glob -directory -nocomplain $folder *.pd]
-        #::completion::debug_msg "files = $files"
-        incr i
-    }
-    #::completion::debug_msg [lindex $::sys_searchpath 0]
-}
-
 #called once upon plugin initialization
 proc ::completion::init {} {
     set initTime [clock milliseconds]
@@ -194,13 +179,11 @@ proc ::completion::scan_all_completions {} {
     struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~ namecanvas savestate pdcontrol slop~}
     set ::monolithic_externals {}
     ::completion::add_user_externals
-    #::completion::add_libraries_externals_from_startup_flags
     ::completion::add_user_customcompletions
     ::completion::add_user_monolithiclist
     set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
     set ::all_externals [lsort $::all_externals]
     ::completion::add_special_messages ;#AFTER sorting
-    ::pdwindow::post "\[completion-plugin\] finished scanning externals\n"
 }
 
 proc ::completion::init_options_menu {} {
@@ -218,9 +201,9 @@ proc ::completion::init_options_menu {} {
     }
 }
 
+#opens the plugin's help file (as called from the configuration window)
 proc ::completion::open_help_file {} {
     set filename [file join $::current_plugin_loadpath "README.pd"]
-    #::completion::debug_msg "help file = $filename"
     open_file "$filename"
 }
 
@@ -507,13 +490,15 @@ proc ::completion::write_config_variable {file_lines name} {
 
 proc ::completion::user_select_color {target} {
     set color [tk_chooseColor -title "AutoComplete settings: Choose a color" -initialcolor $::completion::config($target)]
-    if { $color eq ""} { return }
+    if { $color eq ""} { 
+        return 
+    }
     set ::completion::config($target) $color
     ::completion::update_options_gui
 }
 
-#this function looks for objects in the current folder and recursively call itself for each subfolder
-#we read the subfolders because pd reads the subpatches!
+# this function looks for objects in the current folder and recursively call itself for each subfolder
+# we read the subfolders because pd reads the subpatches!
 proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     variable external_filetype
     if { [expr {$depth > $::completion::config(max_scan_depth)}] } {
@@ -587,17 +572,7 @@ proc ::completion::add_user_externals {} {
     set ::loaded_libs [lsort -unique $::loaded_libs]
 }
 
-# Reads objects from libs declared with startup flags (does anybody still use this?)
-# Deprecated: we don't read from "extra_objects" anymore
-proc ::completion::add_libraries_externals_from_startup_flags {} {
-    ::completion::debug_msg "entering add libraries externals" "entering_procs"
-    #::completion::debug_msg "::startup_libraries = $::startup_libraries"
-    foreach lib $::startup_libraries {
-        ::completion::debug_msg "lib = $lib" "loaded_externals"
-        set filename [file join $::current_plugin_loadpath "extra_objects" $lib]
-        ::completion::read_completionslist_file [format "%s.txt" $filename]
-    }
-}
+
 
 #adds any completion set in any txt file under "custom_completions"
 proc ::completion::add_user_customcompletions {} {
@@ -656,6 +631,61 @@ proc ::completion::read_completionslist_file {afile} {
     }
 }
 
+###########################################################
+#                      overwritten                        #
+###########################################################
+proc pdtk_text_editing {mytoplevel tag editing} {
+    ::completion::debug_msg "entering overwritten pdtk text editing" "entering_procs"
+    #::completion::debug_msg "   mytoplevel = $mytoplevel"
+    #::completion::debug_msg "   tag = $tag"
+    #::completion::debug_msg "   editing = $editing"
+    set ::toplevel $mytoplevel
+    set tkcanvas [tkcanvas_name $mytoplevel]
+    set rectcoords [$tkcanvas bbox $tag]
+    if {$rectcoords ne ""} {
+        set ::editx  [expr {int([lindex $rectcoords 0])}]
+        set ::edity  [expr {int([lindex $rectcoords 3])}]
+    }
+    if {$editing == 0} {
+        selection clear $tkcanvas
+        # completion
+        # Henri: Yvan originally called set_empty_listbox. Doens't seem to make sense. It wouldn't even reset ::current_text
+        ::completion::popup_destroy
+        set ::completion_text_updated 0
+        # store keywords. Henri: i'm disabling that. See developmentGuide.md
+        #if {$::completion::config(save_mode)} {
+        #    set text [$tkcanvas itemcget $::current_tag -text]
+        #    ::completion_store $text
+        #}
+    } {
+        set ::editingtext($mytoplevel) $editing
+        # completion
+        set ::current_canvas $tkcanvas
+        if {$tag ne ""} {
+            # unbind Keys if new object
+            if {$tag ne $::current_tag} {
+                bind $::current_canvas <KeyRelease> {}
+            }
+            set ::current_tag $tag
+        }
+
+        if {[string first "completion-plugin" [bindtags $::current_canvas] ] eq -1} {
+            bindtags $::current_canvas "completion-plugin [bindtags $::current_canvas]"
+        }
+        #delete_if {[string first [bindtags $::current_canvas] "test"] eq -1} {
+        #delete_    bindtags $::current_canvas "test [bindtags $::current_canvas]"
+        #delete_}
+        #delete_#bind $::current_canvas <$completion::config(hotkey)> {+::completion::trigger;break;}
+        #delete_::pdwindow::post "-----EDITING------\n"
+        #delete_::pdwindow::post "current_canvas: $::current_canvas\n"
+        #delete_set dbg [bindtags $::current_canvas]
+        #delete_::pdwindow::post "bindtags: $dbg\n"
+    }
+    set ::new_object $editing
+    $tkcanvas focus $tag
+    set ::focus "tag"
+}
+
 # this is called when the user enters the auto completion mode
 proc ::completion::trigger {} {
     ::completion::debug_msg "===entering trigger===" "entering_procs"
@@ -669,8 +699,7 @@ proc ::completion::trigger {} {
         && ! $::completion_text_updated
     } {
         #this code is responsible for reading any text already present in the object when you enter the autocomplete mode
-        set ::current_text \
-            [$::current_canvas itemcget $::current_tag -text]
+        set ::current_text [$::current_canvas itemcget $::current_tag -text]
         ::completion::trimspaces
         ::completion::debug_msg "Text that was already in the box = $::current_text\n" "searches"
     }
@@ -764,7 +793,7 @@ proc ::completion::skipping_search {{text ""}} {
     #set variables related to skipping_search
     ::completion::debug_msg "::completion::skipping_search($text)" "searches"
     set ::current_search_mode 1
-        # is this if necessary?
+    # do we really need to check if the popup exists?
     if {[winfo exists .pop]} {
         .pop.f.lb configure -selectbackground $::completion::config(skipbg)
     }
@@ -823,7 +852,7 @@ proc ::completion::search {{text ""}} {
     # Now this part will always run so you can perform "empty searchs" which will return all objects. In Yvan's code it would clear completions on an "empty search"
     #Yvan was using -glob patterns but they wouldn't match stuff with forward slashes (/)
     #for example if you type "freq" it wouldn't match cyclone/freqshift~
-    #using -regexp not allows for that
+    #using -regexp now allows for that
     #Also i've added case insensitive searching (since PD object creation IS case-insensitive).
     set pattern "$::current_text"
     set pattern [::completion::fix_pattern $pattern]
@@ -899,13 +928,12 @@ proc ::completion::increment {{amount 1}} {
         focus .pop.f.lb
         set ::focus "pop"
     }
-    # from now on it was on an "else"
     ::completion::debug_msg "bindtags = [bindtags .pop.f.lb]" "popup_gui"
     ::completion::debug_msg "bindings on .pop.f.lb = [bind .pop.f.lb]" "popup_gui"
     set selected [.pop.f.lb curselection]
     ::completion::debug_msg "selected = $selected" "popup_gui"
     
-    #if completion list is empty then selected will be empty
+    #if completion list is empty then "selected" will be empty
     if { ![ string is integer -strict $selected] } {
         return
     }
@@ -990,7 +1018,7 @@ proc ::completion::choose_selected {} {
             
             $::current_canvas itemconfigure $rectangle -fill red
 
-            #mimicking PD messages (using -d 1)
+            # mimicking PD messages (using -d 1)
             # pdtk_undomenu $::current_canvas clear no
             # pdtk_undomenu $::current_canvas clear no
             # $::current_canvas itemconfigure $rectangle -fill black
@@ -1108,15 +1136,35 @@ proc ::completion::lb_keyrelease {key unicode} {
         ::completion::insert_key $key; return
     }
     switch -- $key {
-        "space"     { ::completion::insert_key " " } ;# search
+        "space"     { ::completion::insert_key " " }
         "Return"    { ::completion::choose_selected }
-        "BackSpace" { ::completion::chop } ;# search
-        "comma" { ::completion::insert_key "," } ;# search
-        "period" { ::completion::insert_key "." } ;# search
+        "BackSpace" { ::completion::chop }
+        "comma" { ::completion::insert_key "," }
+        "semicolon" { ::completion::insert_key ";" }
+        "period" { ::completion::insert_key "." }
+        "underscore" { ::completion::insert_key "_" }
+        "equal" { ::completion::insert_key "+" }
+        "minus" { ::completion::insert_key "-" }
+        "slash" { ::completion::insert_key "/" }
+        "exclam" { ::completion::insert_key "!" }
+        "at" { ::completion::insert_key "@" }
+        "numbersign" { ::completion::insert_key "#" }
+        "dollar" { ::completion::insert_key "$" }
+        "percent" { ::completion::insert_key "%" }
+        "ampersand" { ::completion::insert_key "&" }
+        "percent" { ::completion::insert_key "%" }
+        "underscore" { ::completion::insert_key "_" }
         "plus" { ::completion::insert_key "+" }
         "minus" { ::completion::insert_key "-" }
-        "underscore" { ::completion::insert_key "_" }
     }
+    # I've tried adding those but without success
+    # "parenleft" { ::completion::insert_key "\(" }
+    # "parenright" { ::completion::insert_key "\)" }
+    # "bracketleft" { ::completion::insert_key "\[" }
+    # "bracketright" { ::completion::insert_key "\]" }
+    # "braceleft" { ::completion::insert_key "\{" }
+    # "braceright" { ::completion::insert_key "\}" }
+    # "backslash" { ::completion::insert_key "\\" }
 }
 
 # keys from textbox (the box where you tipe stuff in PD)
@@ -1146,7 +1194,10 @@ proc ::completion::insert_key {key} {
     # pdsend "pd key 1 $keynum 0" ; notworking
     ::completion::sendKeyDown $keynum
     ::completion::debug_msg "inserting key $keynum" "char_manipulation"
+
     append ::current_text $key
+    # set ::current_text [$::current_canvas itemcget $::current_tag -text] ;# why does this line doesn't work?
+
     # to debug the right line
     ::completion::search $::current_text
     set ::focus "canvas"
@@ -1434,62 +1485,6 @@ proc ::completion::scrollbar_check {} {
         }
     }
 }
-
-###########################################################
-#                      overwritten                        #
-###########################################################
-proc pdtk_text_editing {mytoplevel tag editing} {
-    ::completion::debug_msg "entering overwritten pdtk text editing" "entering_procs"
-    #::completion::debug_msg "   mytoplevel = $mytoplevel"
-    #::completion::debug_msg "   tag = $tag"
-    #::completion::debug_msg "   editing = $editing"
-    set ::toplevel $mytoplevel
-    set tkcanvas [tkcanvas_name $mytoplevel]
-    set rectcoords [$tkcanvas bbox $tag]
-    if {$rectcoords ne ""} {
-        set ::editx  [expr {int([lindex $rectcoords 0])}]
-        set ::edity  [expr {int([lindex $rectcoords 3])}]
-    }
-    if {$editing == 0} {
-        selection clear $tkcanvas
-        # completion
-        # Henri: Yvan originally called set_empty_listbox. Doens't seem to make sense. It wouldn't even reset ::current_text
-        ::completion::popup_destroy
-        set ::completion_text_updated 0
-        # store keywords. Henri: i'm disabling that. See developmentGuide.md
-        #if {$::completion::config(save_mode)} {
-        #    set text [$tkcanvas itemcget $::current_tag -text]
-        #    ::completion_store $text
-        #}
-    } {
-        set ::editingtext($mytoplevel) $editing
-        # completion
-        set ::current_canvas $tkcanvas
-        if {$tag ne ""} {
-            # unbind Keys if new object
-            if {$tag ne $::current_tag} {
-                bind $::current_canvas <KeyRelease> {}
-            }
-            set ::current_tag $tag
-        }
-
-        if {[string first "completion-plugin" [bindtags $::current_canvas] ] eq -1} {
-            bindtags $::current_canvas "completion-plugin [bindtags $::current_canvas]"
-        }
-        #delete_if {[string first [bindtags $::current_canvas] "test"] eq -1} {
-        #delete_    bindtags $::current_canvas "test [bindtags $::current_canvas]"
-        #delete_}
-        #delete_#bind $::current_canvas <$completion::config(hotkey)> {+::completion::trigger;break;}
-        #delete_::pdwindow::post "-----EDITING------\n"
-        #delete_::pdwindow::post "current_canvas: $::current_canvas\n"
-        #delete_set dbg [bindtags $::current_canvas]
-        #delete_::pdwindow::post "bindtags: $dbg\n"
-    }
-    set ::new_object $editing
-    $tkcanvas focus $tag
-    set ::focus "tag"
-}
-
 
 ############################################################
 # utils
