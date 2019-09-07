@@ -56,7 +56,7 @@ set ::completion::plugin_version "0.47.0"
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
 set ::completion::config(max_lines) 20
 set ::completion::config(font) "DejaVu Sans Mono"
-set ::completion::config(font_size) 8 ;# FIXME ???
+set ::completion::config(font_size) 8 ;# should load pd's default
 set ::completion::config(bg) "#0a85fe"
 set ::completion::config(skipbg) "#0ad871"
 set ::completion::config(monobg) "#9832ff"
@@ -1006,70 +1006,10 @@ proc ::completion::choose_selected {} {
             # I'm addind this line just to have the option to print the lib name on the console but i don't think this is needed it apperas on the completions list.
             #::pdwindow::post "auto complete: [lindex [split $choosen_item /] 0] is part of the $libName library\n\n"
         }
-        ::completion::erase_text ;#before replacing
-        set isSpecialMsg [::completion::run_special_messages $choosen_item]
+        set isSpecialMsg [::completion::is_special_msg $choosen_item]
         if { $isSpecialMsg } {
-            #add code to delete the select object in the canvas?
-            
-            #$::current_canvas configure -bg #00ff00
-            set rectangle "$::current_tag"
-            append rectangle "R"
-            ::completion::debug_msg "rectangle = $rectangle\n"
-            
-            $::current_canvas itemconfigure $rectangle -fill red
-
-            # mimicking PD messages (using -d 1)
-            # pdtk_undomenu $::current_canvas clear no
-            # pdtk_undomenu $::current_canvas clear no
-            # $::current_canvas itemconfigure $rectangle -fill black
-            # $::current_canvas itemconfigure $::current_tag -fill black
-            # pdtk_undomenu $::current_canvas clear no
-
-            #$::current_canvas delete $::current_tag ;#THIS ACTUALLY REMOVES THE TEXT THE USER IS TYPING
-            #$::current_canvas delete $rectangle ;#THIS removes the rectangle
-
-            #BUT they are created again when i exit exit mode
-            #BUT they are created again when i exit exit mode
-            #BUT they are created again when i exit exit mode
-
-            set coords [$::current_canvas coords $rectangle]
-            ::completion::debug_msg "coords = $coords\n"
-
-                ::completion::debug_msg "::current_canvas = $::current_canvas\n"
-            set winfo_test "[winfo toplevel $::current_canvas]"
-                ::completion::debug_msg "winfo_test = $winfo_test\n"
-
-            set x [lindex $coords 0]
-                set x [expr {$x-3}]
-            set y [lindex $coords 1]
-                set y [expr {$y-3}]
-            set w 75
-            set h 75
-            ::completion::debug_msg "x = $x\n"
-            ::completion::debug_msg "y = $y\n"
-            ::completion::debug_msg "w = $w\n"
-            ::completion::debug_msg "h = $h\n"
-            ::completion::debug_msg "\[expr \{$x+$w\}\] = [expr {$x+$w}]\n"
-
-            
-            pdsend "[winfo toplevel $::current_canvas] motion $x $y 0"
-            pdsend "[winfo toplevel $::current_canvas] mouse $x $y 1 0"
-            pdsend "[winfo toplevel $::current_canvas] motion [expr {$x+$w}] [expr {$y+$h}] 0"
-            pdsend "[winfo toplevel $::current_canvas] mouseup [expr {$x+$w}] [expr {$y+$h}] 1"
-
-            
-            pdsend "[winfo toplevel $::current_canvas] key 1 127 0" ;#delete = 127
-            pdsend "[winfo toplevel $::current_canvas] key 0 127 0" ;
-            #pdsend "[winfo toplevel $::current_canvas] text 0" ;
-
-            #WORK AROUND
-
-            #QUERY INFORMATION ABOUT THE $rectlange position and mimic mouse and keyboard behavior (ghostPatching) by sendin input messages do pd engine to delete the object!
-
-            #$::current_canvas itemconfigure $::current_tag TK_CONFIG_COLOR #ff0000
-            
-            #$::current_canvas delete "all" ;#delete everything but the selected object is recreated
-
+            ::completion::erase_text
+            ::completion::delete_obj_onspecialmsg
         } else {
             ::completion::replace_text $choosen_item            
         }
@@ -1080,6 +1020,74 @@ proc ::completion::choose_selected {} {
         #set ::focus "canvas"
         ::completion::debug_msg "end of choose_selected current_text: $::current_text" "char_manipulation"
     }
+}
+
+proc ::completion::delete_obj_onspecialmsg {} {
+    # will anybody ever read this mess? heh
+    # well, this is still experimental software. I'll clean this up in the future :)
+    # (dreaming of pd 1.0)
+
+    #$::current_canvas configure -bg #00ff00
+    set rectangle "$::current_tag"
+    append rectangle "R"
+    ::completion::debug_msg "rectangle = $rectangle\n"
+    
+    $::current_canvas itemconfigure $rectangle -fill red
+
+
+    # mimicking PD messages (using -d 1)
+    # pdtk_undomenu $::current_canvas clear no
+    # pdtk_undomenu $::current_canvas clear no
+    # $::current_canvas itemconfigure $rectangle -fill black
+    # $::current_canvas itemconfigure $::current_tag -fill black
+    # pdtk_undomenu $::current_canvas clear no
+
+    #$::current_canvas delete $::current_tag ;#THIS ACTUALLY REMOVES THE TEXT THE USER IS TYPING
+    #$::current_canvas delete $rectangle ;#THIS removes the rectangle
+
+    #BUT they are created again when i exit exit mode
+    #BUT they are created again when i exit exit mode
+    #BUT they are created again when i exit exit mode
+
+    set coords [$::current_canvas coords $rectangle]
+    ::completion::debug_msg "coords = $coords\n"
+
+        ::completion::debug_msg "::current_canvas = $::current_canvas\n"
+    set winfo_test "[winfo toplevel $::current_canvas]"
+        ::completion::debug_msg "winfo_test = $winfo_test\n"
+
+    set offset 1 ;# how much we're backing off before starting the selection
+    set x [lindex $coords 0]
+        set x [expr {$x-$offset}]
+    set y [lindex $coords 1]
+        set y [expr {$y-$offset}]
+    set w [expr $offset+1] ;# how much to go right, then
+    set h [expr $offset+1] ;# how much to go down, then
+    ::completion::debug_msg "x = $x\n"
+    ::completion::debug_msg "y = $y\n"
+    ::completion::debug_msg "w = $w\n"
+    ::completion::debug_msg "h = $h\n"
+    ::completion::debug_msg "\[expr \{$x+$w\}\] = [expr {$x+$w}]\n"
+
+    
+    pdsend "[winfo toplevel $::current_canvas] motion $x $y 0"
+    pdsend "[winfo toplevel $::current_canvas] mouse $x $y 1 0"
+    pdsend "[winfo toplevel $::current_canvas] motion [expr {$x+$w}] [expr {$y+$h}] 0"
+    pdsend "[winfo toplevel $::current_canvas] mouseup [expr {$x+$w}] [expr {$y+$h}] 1"
+
+    
+    pdsend "[winfo toplevel $::current_canvas] key 1 127 0" ;#delete = 127
+    pdsend "[winfo toplevel $::current_canvas] key 0 127 0" ;
+    #pdsend "[winfo toplevel $::current_canvas] text 0" ;
+
+    #WORK AROUND
+
+    #QUERY INFORMATION ABOUT THE $rectlange position and mimic mouse and keyboard behavior (ghostPatching) by sendin input messages do pd engine to delete the object!
+
+    #$::current_canvas itemconfigure $::current_tag TK_CONFIG_COLOR #ff0000
+    
+    #$::current_canvas delete "all" ;#delete everything but the selected object is recreated
+
 }
 
 # The keypressed and key released methods just route their input to this proc and it does the rest
@@ -1158,6 +1166,8 @@ proc ::completion::lb_keyrelease {key unicode} {
         "minus" { ::completion::insert_key "-" }
     }
     # I've tried adding those but without success
+    # maybe i should do like the solution i've used for this: 
+    # https://github.com/HenriAugusto/completion-plugin/issues/21
     # "parenleft" { ::completion::insert_key "\(" }
     # "parenright" { ::completion::insert_key "\)" }
     # "bracketleft" { ::completion::insert_key "\[" }
@@ -1221,9 +1231,9 @@ proc ::completion::erase_text {} {
     }
 }
 
-# this is the proc that types the object name for the user. It should be used  in two steps
-# 1: by erasing what the user typed (calling erase_text BEFORE calling this function)
-# 2: Then calling this function which simulates typing the match chosen by the user
+# this is the proc that types the object name for the user. It runs in two steps
+# 1: by erasing what the user typed (calling erase_text)
+# 2: typing the match chosen by the user
 # Why not just send the remaining chars, you ask? It would not make sense in "skip" search mode!
 # You might also wonder why not use
 #       pdtk_text_selectall $::current_canvas $::current_tag
@@ -1233,6 +1243,7 @@ proc ::completion::erase_text {} {
 # I've tried it but it doesn't work (idky yet).
 proc ::completion::replace_text {args} {
     ::completion::debug_msg "===Entering replace_text" "entering_procs"
+    ::completion::erase_text
     set text ""
     if { ( !$::completion::config(auto_complete_libs) && !$::is_shift_down) ||
          (  $::completion::config(auto_complete_libs) &&  $::is_shift_down) 
@@ -1259,7 +1270,7 @@ proc ::completion::replace_text {args} {
     #set ::current_text "" ; Not needed because choose_selected will empty that
 }
 
-proc ::completion::run_special_messages { msg } {
+proc ::completion::is_special_msg { msg } {
     switch -- $msg {
         "plugin::rescan" {
              ::completion::scan_all_completions 
@@ -1501,7 +1512,6 @@ proc ::completion::try_common_prefix {} {
     set found 0
     set prefix [::completion::common_prefix]
     if {$prefix ne $::current_text && $prefix ne ""} {
-        ::completion::erase_text
         ::completion::replace_text $prefix
         # prevent errors in pdtk_text_editing
         catch { focus .pop.f.lb }
@@ -1540,10 +1550,6 @@ proc ::completion::msgbox {str} {
     pack .cpMsgBox$str.f.okbtn
 }
 
-
-proc ::completion::debug_button {} {
-    ::completion::debug_msg "CLICKED OKAY"
-}
 
 # just in case.
 bind all <$::modifier-Key-Return> {pdsend "$::focused_window reselect"}

@@ -1,21 +1,37 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.47.0 (Henri Augusto)
+
+### Bug Fixes
+
+  * Now that you can set custom-hotkeys this exposed an issue where the keys being used for trigger the plugin would also be typed in the object box. That was fixed by waiting 200ms without processing any KeyRelease event (which should be enough for the user to release the keys used to trigger the plugin)
+  * users with kbds with languages where "~" is a MultiKey: you can type ~ while seeing the suggestions window by pressing ~ twice (just like you could type ~ in PD <=0.49)
+    * ex: Portuguese, French, spanish, etc. I've only tested it with my pt-br keyboard, though.
+  * added some support for typing more chars in ::completion::lb_keyrelease
+  * fixed bug on parcial completions (completing a common prefix of all suggestions)
+
+### improvements
+
+  * improvements for the object box deletion when using a special message (options,  rescan, debug, etc)
+  * general cleanup of code
+
+
 ## v0.47.0-test1 (Henri Augusto)
 
 ### new features
 
-    - Changes realted to pd 0.50
-        - in this version the Tab key switches the selected object so now we bind the completion window to **Ctrl+SPace**
-          - aditionally you can change the binding in the configurations
-        - [pdcontrol] and [slop~] added to the vanilla object list
+  * Changes related to pd 0.50
+      * in this version the Tab key switches the selected object so now we bind the completion window to **Ctrl+SPace**
+        * aditionally you can change the binding in the configurations
+      * [pdcontrol] and [slop~] added to the vanilla object list
     -now you can use the suggestion window to access functionality
-       - **completion::options**: open the options windows
-       - **completion::rescan**: rescan the externals
-       - **completion::help**: open the help patch
-       - **completion::debug**: enter and exit debug mode
-    - _the plugin automatically deletes the leftover object_
-      - that might be optional in the future
-      - it deletes the object by simulating user input. It is a **hack** so it will delete any object under the one you're typing
+     * **completion::options**: open the options windows
+     * **completion::rescan**: rescan the externals
+     * **completion::help**: open the help patch
+     * **completion::debug**: enter and exit debug mode
+  * _the plugin automatically deletes the leftover object_
+    * that might be optional in the future
+    * it deletes the object by simulating user input. It is a **hack** so it will delete any object under the one you're typing
 
 ### Bug fixes
 
