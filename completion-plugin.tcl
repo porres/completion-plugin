@@ -1221,9 +1221,9 @@ proc ::completion::erase_text {} {
     }
 }
 
-# this is the proc that types the object name for the user. It runs in two steps
-# 1: by erasing what the user typed (calling erase_text)
-# 2: typing the match chosen by the user
+# this is the proc that types the object name for the user. It should be used  in two steps
+# 1: by erasing what the user typed (calling erase_text BEFORE calling this function)
+# 2: Then calling this function which simulates typing the match chosen by the user
 # Why not just send the remaining chars, you ask? It would not make sense in "skip" search mode!
 # You might also wonder why not use
 #       pdtk_text_selectall $::current_canvas $::current_tag
@@ -1240,8 +1240,9 @@ proc ::completion::replace_text {args} {
         set args [split $args /]
         set args [lindex $args end]
     }
-    # if there are soaces the args variable will arrive as a list. Example: {list append} ;# Henri: what are soaces??
-    # this foreach concatenates it back to a string. Example: list append
+    # if there are spaces the args variable will arrive as a list. 
+    # Example: {"list" "append" "3" "4" "5"}
+    # this foreach concatenates it back to a string: "list append 3 4 5"
     foreach arg $args { set text [concat $text $arg] }
     #for each char send a keydown event to PD to simulate user key presses
     for {set i 0} {$i < [string length $text]} {incr i 1} {
@@ -1500,6 +1501,7 @@ proc ::completion::try_common_prefix {} {
     set found 0
     set prefix [::completion::common_prefix]
     if {$prefix ne $::current_text && $prefix ne ""} {
+        ::completion::erase_text
         ::completion::replace_text $prefix
         # prevent errors in pdtk_text_editing
         catch { focus .pop.f.lb }
