@@ -592,7 +592,7 @@ proc ::completion::add_user_customcompletions {} {
 proc ::completion::add_user_monolithiclist {} {
     ::completion::debug_msg "entering add user monolithic list" "entering_procs"
         ::completion::debug_msg "::loaded_libs = $::loaded_libs" "loaded_externals"
-    set userdir [file join $::current_plugin_loadpath "monolithic_objects"]
+    set userdir [file join $::completion_plugin_path "monolithic_objects"]
 
     # for each .txt file in /monolithic_objects
     foreach filename [glob -directory $userdir -nocomplain -types {f} -- \
