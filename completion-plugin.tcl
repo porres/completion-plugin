@@ -69,6 +69,7 @@ set ::completion::config(auto_complete_libs) 1
 
 # private variables
 
+set ::completion_plugin_path ""
 set ::toplevel ""
 set ::current_canvas ""
 set ::current_tag ""
@@ -90,12 +91,12 @@ set ::completion_debug 0 ;
 # debug categories
 set ::debug_loaded_externals 0 ;#prints loaded externals
 set ::debug_entering_procs 1 ;#prints a message when entering a proc
-set ::debug_key_event 1 ;#prints a message when a key event is processed
+set ::debug_key_event 0 ;#prints a message when a key event is processed
 set ::debug_searches 0 ;#messages about the performed searches
 set ::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
 set ::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
 set ::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
-set ::debug_settings 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
+set ::debug_settings 1 ;#messages related to storing [send/receive] names [tabread] names and alike.
 set ::debug_prefix 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
 
 #0 = normal
@@ -147,6 +148,7 @@ proc ::completion::sendKeyDownAndUp {keynum} {
 proc ::completion::init {} {
     set initTime [clock milliseconds]
     variable external_filetype
+    set ::completion_plugin_path "$::current_plugin_loadpath"
     ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
     ::completion::read_config
     #::completion::read_extras
@@ -203,7 +205,7 @@ proc ::completion::init_options_menu {} {
 
 #opens the plugin's help file (as called from the configuration window)
 proc ::completion::open_help_file {} {
-    set filename [file join $::current_plugin_loadpath "README.pd"]
+    set filename [file join $::completion_plugin_path "README.pd"]
     open_file "$filename"
 }
 
@@ -359,6 +361,8 @@ proc ::completion::update_options_gui {} {
     .options.f.skip_bg_entry insert 0 $::completion::config(skipbg)
     .options.f.mono_bg_entry delete 0 end
     .options.f.mono_bg_entry insert 0 $::completion::config(monobg)
+    .options.f.hotkeyentry delete 0 end
+    .options.f.hotkeyentry insert 0 $::completion::config(hotkey)
 }
 
 proc ::completion::restore_default_option {} {
@@ -393,7 +397,7 @@ proc ::completion::read_config {{filename completion.cfg}} {
     if {[file exists $filename]} {
         set fp [open $filename r]
     } else {
-        set filename [file join $::current_plugin_loadpath $filename]
+        set filename [file join $::completion_plugin_path $filename]
         if {[file exists $filename]} {
             set fp [open $filename r]
         } else {
@@ -427,7 +431,7 @@ proc ::completion::write_config {{filename completion.cfg}} {
         set fp [open $filename r]
         set had_to_create_file false
     } else {
-        set filename [file join $::current_plugin_loadpath $filename]
+        set filename [file join $::completion_plugin_path $filename]
         if {[file exists $filename]} {
             set fp [open $filename r]
             set had_to_create_file false
@@ -577,7 +581,7 @@ proc ::completion::add_user_externals {} {
 #adds any completion set in any txt file under "custom_completions"
 proc ::completion::add_user_customcompletions {} {
     ::completion::debug_msg "entering add user object list" "entering_procs"
-    set userdir [file join $::current_plugin_loadpath "custom_completions"]
+    set userdir [file join $::completion_plugin_path "custom_completions"]
     foreach filename [glob -directory $userdir -nocomplain -types {f} -- \
                          *.txt] {
         ::completion::read_completionslist_file $filename
