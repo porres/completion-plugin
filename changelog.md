@@ -1,5 +1,15 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.47.1 (Henri Augusto)
+
+### Bug Fixes
+
+  * fixes a bug where the plugin would not save/read the configs from the right folder if the user had any plugin load after the completion-plugin (it was reading "$::current_plugin_loadpath")
+
+### Improvements
+
+  * Now Control+Shift+Up/Down are used to skip 10 rows up/down (consistent with Ctrl+Left/Right)
+
 ## v0.47.0 (Henri Augusto)
 
 ### Bug Fixes

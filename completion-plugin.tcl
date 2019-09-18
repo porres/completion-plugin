@@ -50,7 +50,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.47.0"
+set ::completion::plugin_version "0.47.1"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
@@ -756,8 +756,8 @@ proc ::completion::trigger {} {
             # if the unique completion was used there will be no .pop to bind!
             if { !$completed_because_was_unique } {
                 # work in progress
-                bind .pop <FocusOut> {::completion::debug_msg "the user has unfocused the popup"; ::completion::popup_destroy }
-                bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"} 
+                # bind .pop <FocusOut> {::completion::debug_msg "the user has unfocused the popup"; ::completion::popup_destroy }
+                # bind $::current_canvas <FocusOut> {::completion::debug_msg "the user has unfocused the canvas"} 
             }
     } else {
         ::completion::debug_msg "the user is NOT typing into an object box" "key_event"
@@ -1112,16 +1112,6 @@ proc ::completion::update_modifiers {key pressed_or_released} {
 proc ::completion::keypress {key unicode} {
     ::completion::debug_msg "key pressed was $key.  Unicode = $unicode\n" "key_event"
     ::completion::update_modifiers $key 1
-    if {$::is_shift_down} {
-        switch -- $key {
-            "Up" {
-                ::completion::increment -10 
-            } 
-            "Down" { 
-                ::completion::increment 10
-            }
-        }        
-    }
     # this is needed for users with keyboards in languages where ~ is a Multi_Key (ex: portuguese, french, etc) - only tested on PT-BR keyboard
     # tested on Windows 7 with a pt-br keyboard. This unicode "~~" is not caught on key release
     switch -- $unicode {
@@ -1428,8 +1418,8 @@ proc ::completion::popup_draw {} {
         # and then set my own bindings (Those Up and Down binds would override the Up and Down on the ListBox bindtags if they weren't removed)
         bind .pop.f.lb <Up> {::completion::increment -1 ; break}
         bind .pop.f.lb <Down> {::completion::increment 1 ; break}
-        bind .pop.f.lb <Shift-Up> {after idle {::completion::increment -10} ; break}
-        bind .pop.f.lb <Shift-Down> {after idle {::completion::increment 10} ; break}
+        bind .pop.f.lb <Control-Up> {after idle {::completion::increment -10} ; break}
+        bind .pop.f.lb <Control-Down> {after idle {::completion::increment 10} ; break}
 
         # I could NOT override the Next and Prior keys (Pg Up and Pg Down) without removing the ListBox bindtag. Strange hmmm probably a bug
         # also even after removing the ListBox from the bindtags those don't work! Only if i hold some modifier (so it becomes more specific).
