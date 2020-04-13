@@ -146,7 +146,6 @@ proc ::completion::sendKeyDownAndUp {keynum} {
 
 #called once upon plugin initialization
 proc ::completion::init {} {
-    set initTime [clock milliseconds]
     variable external_filetype
     set ::completion_plugin_path "$::current_plugin_loadpath"
     ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
@@ -162,18 +161,13 @@ proc ::completion::init {} {
         ::pdwindow::post "      hotkey: $::completion::config(hotkey)\n"
         ::pdwindow::post "      err: $err\n\n"
     }
-    
-    
     ::completion::scan_all_completions
     ::completion::init_options_menu
-    set finalTime [clock milliseconds]
-    set delta [expr {$finalTime-$initTime}]
-    set count [llength $::all_externals]
-    set count [expr {$count+[llength $::monolithic_externals]}]
-    ::pdwindow::post "\[completion-plugin\] loaded $count completions in $delta milliseconds\n"
 }
 
 proc ::completion::scan_all_completions {} {
+    set initTime [clock milliseconds]
+
     set ::all_externals {hslider vslider bng cnv bang float symbol int send receive select route pack unpack trigger spigot moses until print makefilename change swap value list {list append} {list fromsybmol} {list length} {list prepend} {list split} {list store} {list tosymbol} {list trim} delay metro line timer cputime realtime \
     pipe + - * / pow == != > < >= <= & && | || % << >> mtof powtodb rmstodb ftom dbtopow dbtorms mod div sin cos tan atan atan2 sqrt log exp abs random max min clip wrap notein ctlin pgmin bendin touchin polytouchin midiin sysexin midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout midiout makenote stripnote \
     oscparse oscformat tabread tabread4 tabwrite soundfiler table array loadbang netsend netreceive glist textfile text openpanel savepanel bag poly key keyup keyname declare +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ q8_sqrt~ q8_rsqrt~ wrap~ fft~ ifft~ rfft~ rifft~ pow~ log~ exp~ abs~ framp~ mtof~ ftom~ rmstodb~ dbtorms~ dac~ adc~ sig~ line~ vline~ \
@@ -186,6 +180,12 @@ proc ::completion::scan_all_completions {} {
     set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
     set ::all_externals [lsort $::all_externals]
     ::completion::add_special_messages ;#AFTER sorting
+    
+    set finalTime [clock milliseconds]
+    set delta [expr {$finalTime-$initTime}]
+    set count [llength $::all_externals]
+    set count [expr {$count+[llength $::monolithic_externals]}]
+    ::pdwindow::post "\[completion-plugin\] loaded $count completions in $delta milliseconds\n"
 }
 
 proc ::completion::init_options_menu {} {
