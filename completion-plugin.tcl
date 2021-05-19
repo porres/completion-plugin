@@ -151,10 +151,11 @@ proc ::completion::init {} {
     ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
     ::completion::read_config
     #::completion::read_extras
+    # file types for each OS https://github.com/pure-data/externals-howto#library
     switch -- $::windowingsystem {
-        "aqua"  { set external_filetype *.pd_darwin }
-        "win32" { set external_filetype *.dll}
-        "x11"   { set external_filetype *.pd_linux }
+        "aqua"  { set external_filetype {*.pd_darwin *.d_fat *.d_ppc *.d_i386 *.d_amd64 *.d_arm64} }
+        "win32" { set external_filetype {*.dll *.m_i386 *.m_amd64} }
+        "x11"   { set external_filetype {*.pd_linux *.l_fat *.l_i386 *.d_amd64 *.d_arm *.d_arm64} }
     }
     if {[catch {bind "completion-plugin" <$completion::config(hotkey)> {::completion::trigger; break;}} err]} {
         ::pdwindow::post "\n---Error while trying to bind the completion plugin hotkey---\n"
@@ -516,9 +517,18 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     # list of pd files on the folder
     set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd] 
     #List of system depentent (*.pd_darwin, *.dll, *.pd_linux) files on the folder
-    set sys_dependent_files [glob -directory $dir -nocomplain -types {f} -- $external_filetype]
+    set sys_dependent_files ""
+    # search each of extensions available in the OS (for example of macOS, *.pd_darwin,*.d_fat,*.d_ppc,*.d_i386,*.d_amd64,*.d_arm64)
+    foreach filetype $external_filetype {
+        set external_files [glob -directory $dir -nocomplain -types {f} -- $filetype]
+        if {$sys_dependent_files eq ""} {
+            set sys_dependent_files $external_files 
+        } else {
+            set sys_dependent_files [concat $external_files $sys_dependent_files]
+        }
+    }
     set all_files [concat $pd_files $sys_dependent_files]
-    # for both types of files
+    # for all types of files
     foreach filepath $all_files {
         ::completion::debug_msg "     external = $filepath" "loaded_externals"
         set file_tail [file tail $filepath] ;#this one contains the file extension
