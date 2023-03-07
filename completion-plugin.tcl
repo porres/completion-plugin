@@ -201,7 +201,7 @@ proc ::completion::init_options_menu {} {
 
 #opens the plugin's help file (as called from the configuration window)
 proc ::completion::open_help_file {} {
-    set filename [file join $::completion_plugin_path "README.pd"]
+    set filename [file join $::completion_plugin_path "completion-help.pd"]
     open_file "$filename"
 }
 

@@ -6,5 +6,5 @@
 #X text 133 275 File->Preferences->Auto Complete settings;
 #X text 70 226 You can open the help file by clicking on the "Help" button after going to;
 #X text 130 149 [completion-plugin] version 0.48.0 [completion-plugin] finished scanning externals;
-#X obj 333 318 README;
 #X text 179 318 This loads this file -->;
+#X obj 333 318 Completion-help;
