@@ -1,37 +1,36 @@
-# PD AutoComplete Plugin
+# Completion Plugin
 
 This Gui-Plugin enables auto-completion for [pure-data](http://puredata.info) objects. 
 
-* **Does it run on Vanilla?** Yes. It is a Tk/Tcl pluging made to run in Vanilla.
-* **What about Purr Data?** Purr Data uses [nw.js](https://nwjs.io/) for it's GUI. So this pluging doesn't work in Purr Data. But if you're on windows you can use [PD AutoComplete Script](https://github.com/HenriAugusto/PD-AutoComplete-Script)
+* This is a Tk/Tcl pluging that runs Pd-Vanilla or compatible forks like Pd-ceammc.
 
-Here is a link to the [original repo by Yvan Volochine](https://github.com/gusano/completion-plugin).
+Here is a link to previous repositories:
+[original repo by Yvan Volochine](https://github.com/gusano/completion-plugin).
+[up to 0.47.1 repo by Henri Augusto](https://github.com/HenriAugusto/completion-plugin).
+
+Current version: 0.48.0 (compatible to Pure Data 0.53)
 
 ## Gif
 
-![PD AutoComplete Plugin gif](https://github.com/HenriAugusto/completion-plugin/blob/master/images/PD_completion-plugin_gif_demo.gif)
+![PD AutoComplete Plugin gif](https://github.com/porres/completion-plugin/blob/master/images/PD_completion-plugin_gif_demo.gif)
 
 ## How to install:
 
 *After* you install the plugin **you must restart Pure Data**.
 
-### Deken (easy way)
+### Deken (preferred)
 
- - just search for the completion-plugin on deken <3
- - **you need at least Deken 0.3.1** to download the completion plugin. **Pd-0.48-1 comes with deken-0.2.4**! So either
-    - download Pd-0.48-2
-    - open Deken on PD 0.48-1 or older and search for deken. Then install the newer Deken version through Deken.
+ - just search for the completion-plugin on 'deken' <3
+    - In Pd Vanilla, go to Help->Find Externals and search for 'completion*'. Then click to install the latest version.
 
-### Manually (not so easy way)
+### Manually 
 
- - just [download](https://github.com/HenriAugusto/completion-plugin/releases) the plugin and put the whole `PD-AutoComplete-plugin` folder anywhere and add it to your pd paths in **file->Preferences->Path**
- - The easiest way is it on the "extras" folders of your pd install. If you do this you don't need to set the path.
- - Yet i recommend having a "shared extras" folder and add it to your PD Path. This way if you have more than 1 pd installs (example: if you've used the zip distributions to have more than one PD version)
+ - just [download](https://github.com/porres/completion-plugin/releases) the plugin and put the whole folder anywhere and add it to your pd paths in **file->Preferences->Path**
 
 
 ## How to use:
 
-Just hit the TAB key while typing into an object to trigger completion mode.
+Just hit the Alt_L key while typing into an object to trigger completion mode.
 
 Use up and down to move through the suggestions. Use shift+arrows for faster navigation.
 
@@ -53,7 +52,7 @@ How to use each one:
 
 The plugin intelligently scans the paths set by the user (file->preferences->path) to scan for externals without the need for the user to type their name on a file. Consequently the script doesn't need a list of objects. 
 
-It searches the static default paths (ex: *C:/PureData/pd-0.48-0.msw/pd/extra/*) for libraries and then searches any path you've set in *file->preferences->path* or that Deken have set for you.
+It searches the static default paths (ex: *C:/PureData/pd-0.53-2.msw/pd/extra/*) for libraries and then searches any path you've set in *file->preferences->path* or that Deken have set for you.
 
 #### duplicates
 
@@ -62,7 +61,7 @@ Some objects **by design** might be scanned twice as this reflects Pure Data obj
 If you've ser for example the following folder in *file->preferences->path*
 
 ```
-C:/Users/Stravinsky/Dropbox/pd-0.48-0.msw/pd/extra/iemguts/
+C:/Users/Stravinsky/Dropbox/pd-0.53-2.msw/pd/extra/iemguts/
 ```
 
 You can use the canvasargs external in two ways (regardless of the autocomplete plugin):
@@ -71,7 +70,7 @@ You can use the canvasargs external in two ways (regardless of the autocomplete 
 [iemguts/canvasargs]
 
 The first use the path you've set. The second uses the standard path. So the autocomplete plugin will show two options for canvasargs.
-Notice that the first method doesn't avoid naming conflicts while the seconds does. For that reason the latter is usually preferred.
+Notice that the first method doesn't avoid naming conflicts while the seconds does. For that reason the latter may be preferred.
 
 #### Extra keywords
 
@@ -107,8 +106,8 @@ Please fill in an issue on the github repository if you find a bug.
 
 #### Development Guide
 
-I've written a [developtment guide](https://github.com/HenriAugusto/completion-plugin/blob/master/development%20guide.md) to make it easier to tackle on the code.
+There's a [development guide](https://github.com/porres/completion-plugin/blob/master/development%20guide.md) to make it easier to tackle on the code.
 
 #### Change log
 
-You can find it [here.](https://github.com/HenriAugusto/completion-plugin/blob/master/changelog.md)
+You can find it [here.](https://github.com/porres/completion-plugin/blob/master/changelog.md)

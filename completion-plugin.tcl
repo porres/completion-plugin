@@ -1,39 +1,34 @@
 # Copyright (c) 2011 yvan volochine <yvan.volochine@gmail.com>
 #
-# This file is part of completion-plugin.
-#
-# completion-plugin is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the <organization> nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
+# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-# META NAME completion plugin
-# META DESCRIPTION enables completion for objects
-# META AUTHOR <Yvan Volochine> yvan.volochine@gmail.com
-# META VERSION 0.42
-
-# TODO
-# - add user arguments (tabread $1 ...)
 
 # ==========================================
 
-# The original version was developed by Yvan Volochine a long time ago (as the time of writing: 7 years ago)
-# I then embraced the project and i'm willing to mantain it for as long as i can. 
-# Right now i'm kind of new to .tcl so i'm trying to stay true to the original code.
-# When reasonable i will comment talking about changes i did and why.
-#
-# https://github.com/HenriAugusto/completion-plugin
-#
-# Henri Augusto
-
+# The original version was developed by Yvan Volochine in 2011. 7 years later Henri Augusto
+# embraced the project. Porres took over in 2023 
+# 
+# https://github.com/porres/completion-plugin
 
 package require Tcl 8.5
 package require pd_menucommands 0.1
@@ -50,13 +45,13 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.47.1"
+set ::completion::plugin_version "0.48.0"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
-set ::completion::config(max_lines) 20
+set ::completion::config(max_lines) 10
 set ::completion::config(font) "DejaVu Sans Mono"
-set ::completion::config(font_size) 8 ;# should load pd's default
+set ::completion::config(font_size) 12 ;# should load pd's default
 set ::completion::config(bg) "#0a85fe"
 set ::completion::config(skipbg) "#0ad871"
 set ::completion::config(monobg) "#9832ff"
@@ -173,7 +168,7 @@ proc ::completion::scan_all_completions {} {
     pipe + - * / pow == != > < >= <= & && | || % << >> mtof powtodb rmstodb ftom dbtopow dbtorms mod div sin cos tan atan atan2 sqrt log exp abs random max min clip wrap notein ctlin pgmin bendin touchin polytouchin midiin sysexin midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout midiout makenote stripnote \
     oscparse oscformat tabread tabread4 tabwrite soundfiler table array loadbang netsend netreceive glist textfile text openpanel savepanel bag poly key keyup keyname declare +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ q8_sqrt~ q8_rsqrt~ wrap~ fft~ ifft~ rfft~ rifft~ pow~ log~ exp~ abs~ framp~ mtof~ ftom~ rmstodb~ dbtorms~ dac~ adc~ sig~ line~ vline~ \
     threshdold~ snapshot~ vsnapshot~ bang~ samplerate~ send~ receive~ throw~ catch~ block~ switch~ readsf~ writesf~ phasor~ cos~ osc~ tabwrite~ tabplay~ tabread~ tabread4~ tabosc4~ tabsend~ tabreceive~ vcf~ noise~ env~ hip~ lop~ bp~ biquad~ samphold~ print~ rpole~ rzero~ rzero_rev~ cpole~ czero~ czero_rev~ delwrite~ delread~ delread4~ vd~ inlet outlet inlet~ outlet~ clone \
-    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~ namecanvas savestate pdcontrol slop~}
+    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~ namecanvas savestate pdcontrol slop~ trace file}
     set ::monolithic_externals {}
     ::completion::add_user_externals
     ::completion::add_user_customcompletions
@@ -216,10 +211,10 @@ proc ::completion::show_options_gui {} {
         return
     }
     toplevel .options
-    wm title .options "Pd AutoComplete Settings"
+    wm title .options "AutoComplete Settings"
 
     frame .options.f -padx 5 -pady 5
-    label .options.f.title_label -text "PD AutoComplete Settings"
+    label .options.f.title_label -text "AutoComplete Settings"
     .options.f.title_label configure -font [list $::completion::config(font) [expr {$::completion::config(font_size)+3}]]
     
     label .options.f.status_label -text "" -foreground "#cc2222"
@@ -368,9 +363,9 @@ proc ::completion::update_options_gui {} {
 
 proc ::completion::restore_default_option {} {
     set ::completion::config(hotkey) "Control-space"
-    set ::completion::config(max_lines) 20
+    set ::completion::config(max_lines) 10
     set ::completion::config(font) "DejaVu Sans Mono"
-    set ::completion::config(font_size) 8
+    set ::completion::config(font_size) 12
     set ::completion::config(bg) "#0a85fe"
     set ::completion::config(skipbg) "#0ad871"
     set ::completion::config(monobg) "#9832ff"
@@ -461,7 +456,7 @@ proc ::completion::write_config {{filename completion.cfg}} {
     #write the file
     set fp [open $filename w]
     if { $had_to_create_file } {
-        set lines [linsert $lines 0 "This file was generated by PD AutoComplete in the absence of the original file that comes with the plugin.\n"]
+        set lines [linsert $lines 0 "This file was generated by AutoComplete in the absence of the original file that comes with the plugin.\n"]
     }
     puts $fp [join $lines "\n"]
     close $fp

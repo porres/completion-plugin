@@ -1,5 +1,13 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.48.0 (Alexandre Porres)
+
+### Improvements
+
+  * Added new binary formats (tahks to Tomoya Matsuura)
+  * Adopted default hotkey of Alt_L
+  * Included new Vanilla objects included up to Pd 0.53-2
+
 ## v0.47.1 (Henri Augusto)
 
 ### Bug Fixes
