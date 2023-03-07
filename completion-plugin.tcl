@@ -148,7 +148,7 @@ proc ::completion::init {} {
     #::completion::read_extras
     # file types for each OS https://github.com/pure-data/externals-howto#library
     switch -- $::windowingsystem {
-        "aqua"  { set external_filetype {*.pd_darwin *.d_fat *.d_ppc *.d_i386 *.d_amd64 *.d_arm64} }
+        "aqua"  { set external_filetype {*.pd_darwin *.d_fat *.d_i386 *.d_amd64 *.d_arm64} }
         "win32" { set external_filetype {*.dll *.m_i386 *.m_amd64} }
         "x11"   { set external_filetype {*.pd_linux *.l_fat *.l_i386 *.d_amd64 *.d_arm *.d_arm64} }
     }
@@ -513,7 +513,7 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd] 
     #List of system depentent (*.pd_darwin, *.dll, *.pd_linux) files on the folder
     set sys_dependent_files ""
-    # search each of extensions available in the OS (for example of macOS, *.pd_darwin,*.d_fat,*.d_ppc,*.d_i386,*.d_amd64,*.d_arm64)
+    # search each of extensions available in the OS (for example of macOS, *.pd_darwin,*.d_fat,*.d_i386,*.d_amd64,*.d_arm64)
     foreach filetype $external_filetype {
         set external_files [glob -directory $dir -nocomplain -types {f} -- $filetype]
         if {$sys_dependent_files eq ""} {

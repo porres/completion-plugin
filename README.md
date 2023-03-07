@@ -106,7 +106,7 @@ Please fill in an issue on the github repository if you find a bug.
 
 #### Development Guide
 
-There's a [development guide](https://github.com/porres/completion-plugin/blob/master/development%20guide.md) to make it easier to tackle on the code.
+There's a [development guide](https://github.com/porres/completion-plugin/blob/master/development-guide.md) to make it easier to tackle on the code.
 
 #### Change log
 
