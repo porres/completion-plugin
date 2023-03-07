@@ -362,7 +362,7 @@ proc ::completion::update_options_gui {} {
 }
 
 proc ::completion::restore_default_option {} {
-    set ::completion::config(hotkey) "Control-space"
+    set ::completion::config(hotkey) "Alt_L"
     set ::completion::config(max_lines) 10
     set ::completion::config(font) "DejaVu Sans Mono"
     set ::completion::config(font_size) 12
