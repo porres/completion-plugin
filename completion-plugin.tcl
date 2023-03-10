@@ -174,7 +174,7 @@ proc ::completion::scan_all_completions {} {
     ::completion::add_user_customcompletions
     ::completion::add_user_monolithiclist
     set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
-    set ::all_externals [lsort $::all_externals]
+    set ::all_externals [lsort -unique $::all_externals]
     ::completion::add_special_messages ;#AFTER sorting
     
     set finalTime [clock milliseconds]
