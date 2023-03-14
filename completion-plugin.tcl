@@ -516,7 +516,8 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     ::completion::debug_msg "===add_user_externalsOnFolder $dir===" "loaded_externals"
     ::completion::debug_msg "depth =  $depth" "loaded_externals"
 
-    # i concatenate the result of two globs because for some reason i can't use glob with two patterns. I've tried using: {$external_filetype,*.pd}
+    # i concatenate the result of two globs because for some reason i can't use glob with two patterns.
+    # I've tried using: {$external_filetype,*.pd}
     # list of pd files on the folder
     set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd] 
     #List of system depentent (*.pd_darwin, *.dll, *.pd_linux) files on the folder

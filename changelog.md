@@ -1,6 +1,6 @@
 # Changelog for Pure Data auto completion tcl plugin
 
-## v0.48.1 (Alexandre Porres)
+## v0.48.1 [UNRELEASED/UNFINISHED] (Alexandre Porres)
 
 ### Bug Fixes
 
