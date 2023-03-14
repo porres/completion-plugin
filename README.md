@@ -8,7 +8,7 @@ Here is a link to previous repositories:
 [original repo by Yvan Volochine](https://github.com/gusano/completion-plugin).
 [up to 0.47.1 repo by Henri Augusto](https://github.com/HenriAugusto/completion-plugin).
 
-Current version: 0.48.0 (compatible to Pure Data 0.53)
+Current version: 0.48.1 (compatible up to Pure Data 0.53-x)
 
 ## Gif
 

@@ -1,17 +1,17 @@
 ## completion-plugin development guide
 
-The original version was developed by Yvan Volochine a long ago (as the time of writing: 7 years ago). I then embraced the project and i'm willing to mantain it for as long as i can.
-I will be hosting it on [github](https://github.com/HenriAugusto/completion-plugin)
+The original version was developed by Yvan Volochine in 2011, then Henri embraced the project up to version 0.47-1. Porres has taken over from 0.48-0 and on for now...
+Repository is hosted at [github](https://github.com/porres/completion-plugin)
 
-I wrote this as a guide to make easier to people to colaborate on the completion-plugin. Specially if they're new to TCL (as i was when i took the project) that might help a lot.
+This is a guide to make it easier for people to colaborate on the completion-plugin. Specially if they're new to TCL.
 
 ## TCL
 
-First of all i wanna point that this one is the most newbie-friendly among the TCL documentation: [TCL Tutorial](http://www.tcl.tk/man/tcl8.5/tutorial/tcltutorial.html)
+First of all, this one is the most newbie-friendly among the TCL documentation: [TCL Tutorial](http://www.tcl.tk/man/tcl8.5/tutorial/tcltutorial.html)
 
 Also don't miss this one specific to Pure Data [GUIPlugins](https://puredata.info/docs/guiplugins/GUIPlugins/)
 
-### Some important things i will break down here
+### Some important things to break down here
 
 * **whitespaces are important and can break your code!**
 * Ones does not simply write math. You must use 'expr'
@@ -27,23 +27,23 @@ Inside *::completion::popup_draw* we create the listbox (that window with the co
 
 We then store userinput into **::current_text** and later use it perform searches among the stored object names. They're into *::all_externals*. It contains a hardcoded list of vanilla objects. Also on startup we call *::completion::add_user_externals* which scans the folders and subfolders (recursively) of all the external paths that the user have set into "edit->preferences->path" or were added by Deken.
 
-I've added ::completions::debug_msg for an toggable debug function that prints to the PD console. It is controled by the variable **::completion_debug** that should be false (or 0) in final releases but can be set to true (or 1) while developing.
+There's the ::completions::debug_msg method for a toggable debug function that prints to the PD console. It is controled by the variable **::completion_debug** that should be false (or 0) in final releases but can be set to true (or 1) while developing.
 
 ## debugging
 
-I've added a *::completion::debug_msg* method that can be used to post messages to the pd console with a "autocmpl_dbg:" prefix.
+The *::completion::debug_msg* method can be used to post messages to the pd console with a "autocmpl_dbg:" prefix.
 
 ```tcl
 ::completion::debug_msg "this message will be posted to the pd console"
 ```
 
-I've also added a variable for toggling debug mode on/off
+The variable for toggling debug mode on/off is
 
 ```tcl
 set ::completion_debug 1 ;#1 = true 0 = false
 ```
 
-Furthermore sometimes you may only want to debug a single aspect of the plugin. So for that i've added specific variables that are used to set that kind of thinks you want to debug
+Furthermore sometimes you may only want to debug a single aspect of the plugin. So for that there are specific variables that are used to set that kind of thinks you want to debug
 
 ```tcl
 set ::completion_debug 1 ;
@@ -70,9 +70,9 @@ set ::debug_key_event 0 ;#prints a message when a key event is processed
 
 Of course if *::completion_debug * is set to 0 (or false) no debug message will be posted regardless of the specific debug configuration
 
-## Some minor comments on the changes i've made to Yvan's code
+## Final note
 
-1. I'm disabling the unique names completion for now because i don't think it is desireable. While it does detects when the user type a new name it **doesn't** when those names are not used any more (user closed their containing patch, deleted their objects, etc). In future versions we should be able to do that communicating with PD directly.
+
 1. There seems to be a bug on the ListBox widget. 
     * you can't override the <Next> and <Prior> keys (even if you remove all bindtags except for .pop.f.lb)
 

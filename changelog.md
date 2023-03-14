@@ -1,10 +1,20 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.48.1 (Alexandre Porres)
+
+### Bug Fixes
+
+  * Sometimes we can have more than one binary in a library, such as one for intel mac and another for silicon mac. This would duplicate the object entry and this is now filtered to a single entry (thanks to Tomoya Matsuura)
+  
+### Improvements
+
+  * 'Menlo' is now the default font for macOS, just like Pd uses.
+
 ## v0.48.0 (Alexandre Porres)
 
 ### Improvements
 
-  * Added new binary formats (tahks to Tomoya Matsuura)
+  * Added new binary formats (thanks to Tomoya Matsuura)
   * Adopted default hotkey of Alt_L
   * Fixed loading Help
   * Included new Vanilla objects included up to Pd 0.53-2

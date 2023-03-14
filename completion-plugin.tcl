@@ -45,12 +45,16 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.48.0"
+set ::completion::plugin_version "0.48.1"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
 set ::completion::config(max_lines) 10
-set ::completion::config(font) "DejaVu Sans Mono"
+if {$::windowingsystem eq "aqua"} {
+    set ::completion::config(font) "Menlo"
+} else {
+    set ::completion::config(font) "DejaVu Sans Mono"    
+}
 set ::completion::config(font_size) 12 ;# should load pd's default
 set ::completion::config(bg) "#0a85fe"
 set ::completion::config(skipbg) "#0ad871"
@@ -364,7 +368,11 @@ proc ::completion::update_options_gui {} {
 proc ::completion::restore_default_option {} {
     set ::completion::config(hotkey) "Alt_L"
     set ::completion::config(max_lines) 10
-    set ::completion::config(font) "DejaVu Sans Mono"
+    if {$::windowingsystem eq "aqua"} {
+        set ::completion::config(font) "Menlo"
+    } else {
+        set ::completion::config(font) "DejaVu Sans Mono"    
+    }
     set ::completion::config(font_size) 12
     set ::completion::config(bg) "#0a85fe"
     set ::completion::config(skipbg) "#0ad871"
