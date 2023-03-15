@@ -5,6 +5,7 @@
 ### Bug Fixes
 
   * Sometimes we can have more than one binary in a library, such as one for intel mac and another for silicon mac. This would duplicate the object entry and this is now filtered to a single entry (thanks to Tomoya Matsuura)
+  - fixed wrongly-cased help file
   
 ### Improvements
 

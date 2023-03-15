@@ -1,45 +1,37 @@
 # Completion Plugin
 
-This Gui-Plugin enables auto-completion for [pure-data](http://puredata.info) objects. 
+Current version: 0.48.1 (compatible up to Pure Data 0.53-x)
 
-* This is a Tk/Tcl pluging that runs Pd-Vanilla or compatible forks like Pd-ceammc.
+This is a Tcl/Tk plugin that enables auto-completion for [pure-data](http://puredata.info) objects. 
 
 Here is a link to previous repositories:
 - [Original repo by Yvan Volochine](https://github.com/gusano/completion-plugin);
 - [Up to 0.47.1 repo by Henri Augusto](https://github.com/HenriAugusto/completion-plugin).
 
-Current version: 0.48.1 (compatible up to Pure Data 0.53-x)
-
-## Gif
-
-![PD AutoComplete Plugin gif](https://github.com/porres/completion-plugin/blob/master/images/PD_completion-plugin_gif_demo.gif)
-
 ## How to install:
-
-*After* you install the plugin **you must restart Pure Data**.
 
 ### Deken (preferred)
 
  - just search for the completion-plugin on 'deken' <3
-    - In Pd Vanilla, go to Help->Find Externals and search for 'completion*'. Then click to install the latest version.
+    - In Pd Vanilla, go to Help->Find Externals and search for 'completion*'. Then click to install the latest version. Restart Pd!
 
 ### Manually 
 
- - just [download](https://github.com/porres/completion-plugin/releases) the plugin and put the whole folder anywhere and add it to your pd paths in **file->Preferences->Path**
+ - just [download](https://github.com/porres/completion-plugin/releases) the plugin and put the whole folder anywhere that is added to your search paths. Then start or restart Pure Data.
 
 
 ## How to use:
 
-Just hit the Alt_L key while typing into an object to trigger completion mode.
+Just hit the hotkey (Alt_L by default) while typing into an object to see suggestions.
 
-Use up and down to move through the suggestions. Use shift+arrows for faster navigation.
+Use up and down arrows to move through the suggestions. Use shift+arrows for faster navigation.
 
 ### Search modes
 
 There are three search modes
 
 * **normal:** search for exact matches
-* **skip:** search for anything containing the input chars in order. Ex: plf matches zexy/[p]o[l]y[f]un
+* **skip:** search for anything containing the input chars in order. Ex: "mfn" matches [makefilename].
 * **monolithic:** search for objects contained in **multi-object** ("monolithic") distributions (.dll, pd_darwin, .pdlinux). Those are read from monolithicLibs.txt. The respective library must be loaded! See [this link](https://github.com/pure-data/externals-howto#library) on that matter.
 
 How to use each one:
@@ -50,13 +42,11 @@ How to use each one:
 
 ### Externals scanning
 
-The plugin intelligently scans the paths set by the user (file->preferences->path) to scan for externals without the need for the user to type their name on a file. Consequently the script doesn't need a list of objects. 
-
-It searches the static default paths (ex: *C:/PureData/pd-0.53-2.msw/pd/extra/*) for libraries and then searches any path you've set in *file->preferences->path* or that Deken have set for you.
+The plugin intelligently scans for externals in Pd's search paths (the default ones like 'extra' and the ones set by the user). 
 
 #### duplicates
 
-Some objects **by design** might be scanned twice as this reflects Pure Data objection instantiation.
+Some objects **by design** might be listed twice as this reflects Pure Data objection instantiation.
 
 If you've ser for example the following folder in *file->preferences->path*
 
@@ -64,7 +54,7 @@ If you've ser for example the following folder in *file->preferences->path*
 C:/Users/Stravinsky/Dropbox/pd-0.53-2.msw/pd/extra/iemguts/
 ```
 
-You can use the canvasargs external in two ways (regardless of the autocomplete plugin):
+You can use the [canvasargs] external in two ways (regardless of the autocomplete plugin):
 
 [canvasargs]
 [iemguts/canvasargs]
@@ -74,7 +64,7 @@ Notice that the first method doesn't avoid naming conflicts while the seconds do
 
 #### Extra keywords
 
-You can define useful stuff in any .txt inside the folder *custom_completions*. I've already added some useful keywords like "anything", "adddollar", etc and even some constants like Pi and the golden ratio.
+You can define useful stuff in any .txt inside the folder *custom_completions*. There are some examples like "anything", "adddollar", etc and also some constants like Pi and the golden ratio.
 
 ### Settings
 
