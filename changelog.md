@@ -8,6 +8,7 @@
   
 ### Improvements
 
+  *  Fixed/updated Vanilla objects list.
   * 'Menlo' is now the default font for macOS, just like Pd uses.
 
 ## v0.48.0 (Alexandre Porres)

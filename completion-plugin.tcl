@@ -168,11 +168,49 @@ proc ::completion::init {} {
 proc ::completion::scan_all_completions {} {
     set initTime [clock milliseconds]
 
-    set ::all_externals {hslider vslider bng cnv bang float symbol int send receive select route pack unpack trigger spigot moses until print makefilename change swap value list {list append} {list fromsybmol} {list length} {list prepend} {list split} {list store} {list tosymbol} {list trim} delay metro line timer cputime realtime \
-    pipe + - * / pow == != > < >= <= & && | || % << >> mtof powtodb rmstodb ftom dbtopow dbtorms mod div sin cos tan atan atan2 sqrt log exp abs random max min clip wrap notein ctlin pgmin bendin touchin polytouchin midiin sysexin midirealtimein midiclkin noteout ctlout pgmout bendout touchout polytouchout midiout makenote stripnote \
-    oscparse oscformat tabread tabread4 tabwrite soundfiler table array loadbang netsend netreceive glist textfile text openpanel savepanel bag poly key keyup keyname declare +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ q8_sqrt~ q8_rsqrt~ wrap~ fft~ ifft~ rfft~ rifft~ pow~ log~ exp~ abs~ framp~ mtof~ ftom~ rmstodb~ dbtorms~ dac~ adc~ sig~ line~ vline~ \
-    threshdold~ snapshot~ vsnapshot~ bang~ samplerate~ send~ receive~ throw~ catch~ block~ switch~ readsf~ writesf~ phasor~ cos~ osc~ tabwrite~ tabplay~ tabread~ tabread4~ tabosc4~ tabsend~ tabreceive~ vcf~ noise~ env~ hip~ lop~ bp~ biquad~ samphold~ print~ rpole~ rzero~ rzero_rev~ cpole~ czero~ czero_rev~ delwrite~ delread~ delread4~ vd~ inlet outlet inlet~ outlet~ clone \
-    struct drawcurve filledcurve drawpolygon filledpolygon plot drawnumber drawsymbol pointer get set element getsize setsize append scalar sigmund~ bonk~ choice hilbert~ complet-mod~ expr expr~ fexpr~ loop~ lrshift~ pd~ stdout~ rev1~ rev2~ rev3~ bob~ namecanvas savestate pdcontrol slop~ trace file}
+# Vanilla internal objects
+    set ::all_externals { 
+    ;# general data management
+        bang trigger route swap print float int value symbol makefilename send receive \
+    ;# list management
+        pack unpack list append list\ prepend list\ store list\ split list\ trim list\ length list\ fromsymbol list\ tosymbol \
+    ;# arrays/tables
+        tabread tabread4 tabwrite soundfiler table array\ define array\ size array\ sum array\ get array\ set array\ quantile array\ random array\ max array\ min \
+    ;# text management
+        qlist textfile text\ define text\ get text\ set text\ insert text\ delete text\ size text\ tolist text\ fromlist text\ search text\ sequence \
+    ;# file management
+        file\ handle file\ define file\ mkdir file\ which file\ glob file\ stat file\ isdirectory file\ isfile file\ size file\ copy file\ move file\ delete file\ split file\ splitex file\ join file\ splitname \
+    ;# time
+        delay pipe metro line timer cputime realtime \
+    ;# logic
+        select change spigot moses until \
+    ;# math
+        expr clip random + - * / max min > >= < <= == != div mod && || & | << >> sin cos tan atan atan2 wrap abs sqrt exp log pow \
+    ;# acoustic conversions
+        mtof ftom rmstodb dbtorms powtodb dbtopow \
+    ;# midi/osc
+        midiin midiout notein noteout ctlin ctlout pgmin pgmout bendin bendout touchin touchout polytouchin polytouchout sysexin midirealtimein makenote stripnote poly oscparse oscformat \
+    ;# misc
+        openpanel savepanel key keyup keyname netsend netreceive fudiparse fudiformat bag trace \
+    ;# general audio tools
+        adc~ dac~ sig~ line~ vline~ threshold~ env~ snapshot~ vsnapsot~ bang~ samphold~ samplerate~ send~ receive~ throw~ catch~ readsf~ writesf~ print~ \
+    ;# signal math
+        fft~ ifft~ rfft~ irfft~ expr~ fexpr~ +~ -~ *~ /~ max~ min~ clip~ sqrt~ rsqrt~ wrap~ pow~ exp~ log~ abs~ \
+    ;# signal acoustic conversions
+        mtof~ ftom~ rmstodb~ dbtorms~ powtodb~ dbtopow~ \
+    ;# audio generators/tables
+        noise~ phasor~ cos~ osc~ tabosc4~ tabplay~ tabwrite~ tabread~ tabread4~ tabsend~ tabreceive~ \
+    ;# audio filters
+        vcf~ hip~ lop~ slop~ bp~ biquad~ rpole~ rzero~ rzero_rev~ cpole~ czero~ czero_rev~ \
+    ;# audio delay
+        delwrite~ delread~ delread4~ \
+    ;# patch/subpatch
+        loadbang declare savestate clone pdcontrol pd inlet inlet~ outlet outlet~ namecanvas block~ switch~ \
+    ;# data structures
+        struct drawpolygon filledpolygon drawcurve filledcurve drawnumber drawsymbol drawtext plot scalar pointer get set element getsize setsize append \
+    ;# extra
+        sigmund~ bonk~ choice hilbert~ complex-mod~ loop~ lrshift~ pd~ stdout rev1~ rev2~ rev3~ bob~ output~
+    }
     set ::monolithic_externals {}
     ::completion::add_user_externals
     ::completion::add_user_customcompletions
@@ -535,7 +573,7 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     # for all types of files
     foreach filepath $all_files {
         ::completion::debug_msg "     external = $filepath" "loaded_externals"
-        set file_tail [file tail $filepath] ;#this one contains the file extension
+        set file_tail [file tail $filepath] ;# file extension
         set name_without_extension [file rootname $file_tail]
         set dir_name [file dirname $filepath] 
         set how_many_folders_to_get [expr {$depth+0}]
