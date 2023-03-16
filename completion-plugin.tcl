@@ -32,10 +32,19 @@
 
 package require Tcl 8.5
 package require pd_menucommands 0.1
+#package require dialog_path 0.1
+
+namespace eval ::dialog_path:: {
+    variable use_standard_paths_button 1
+    variable verbose_button 0
+    variable docspath ""
+    variable installpath ""
+    namespace export pdtk_path_dialog
+}
 
 namespace eval ::completion:: {
     variable ::completion::config
-    variable external_filetype ""
+#    variable external_filetype ""
 }
 
 ###########################################################
@@ -45,7 +54,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.48.1"
+set ::completion::plugin_version "0.49.0"
 
 # default
 set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
@@ -58,11 +67,11 @@ if {$::windowingsystem eq "aqua"} {
 set ::completion::config(font_size) 12 ;# should load pd's default
 set ::completion::config(bg) "#0a85fe"
 set ::completion::config(skipbg) "#0ad871"
-set ::completion::config(monobg) "#9832ff"
+#set ::completion::config(monobg) "#9832ff"
 set ::completion::config(fg) white
 set ::completion::config(offset) 0
 set ::completion::config(max_scan_depth) 1
-set ::completion::config(auto_complete_libs) 1
+set ::completion::config(auto_complete_libs) 0
 
 # some nice colors to try: #0a85fe #0ad871 #9832ff ; those are great: #ff9831 #ff00ee #012345
 
@@ -100,13 +109,10 @@ set ::debug_prefix 0 ;#messages related to storing [send/receive] names [tabread
 
 #0 = normal
 #1 = skipping
-#2 = monolithic
 set ::current_search_mode 0
 
 # all pd VANILLA objects
 set ::all_externals {}
-
-set ::monolithic_externals {}
 
 set ::loaded_libs {}
 
@@ -145,17 +151,17 @@ proc ::completion::sendKeyDownAndUp {keynum} {
 
 #called once upon plugin initialization
 proc ::completion::init {} {
-    variable external_filetype
+#    variable external_filetype
     set ::completion_plugin_path "$::current_plugin_loadpath"
     ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
     ::completion::read_config
     #::completion::read_extras
     # file types for each OS https://github.com/pure-data/externals-howto#library
-    switch -- $::windowingsystem {
-        "aqua"  { set external_filetype {*.pd_darwin *.d_fat *.d_i386 *.d_amd64 *.d_arm64} }
-        "win32" { set external_filetype {*.dll *.m_i386 *.m_amd64} }
-        "x11"   { set external_filetype {*.pd_linux *.l_fat *.l_i386 *.d_amd64 *.d_arm *.d_arm64} }
-    }
+#    switch -- $::windowingsystem {
+#        "aqua"  { set external_filetype {*.pd_darwin *.d_fat *.d_i386 *.d_amd64 *.d_arm64} }
+#        "win32" { set external_filetype {*.dll *.m_i386 *.m_amd64} }
+#        "x11"   { set external_filetype {*.pd_linux *.l_fat *.l_i386 *.d_amd64 *.d_arm *.d_arm64} }
+#    }
     if {[catch {bind "completion-plugin" <$completion::config(hotkey)> {::completion::trigger; break;}} err]} {
         ::pdwindow::post "\n---Error while trying to bind the completion plugin hotkey---\n"
         ::pdwindow::post "      hotkey: $::completion::config(hotkey)\n"
@@ -211,10 +217,8 @@ proc ::completion::scan_all_completions {} {
     ;# extra
         sigmund~ bonk~ choice hilbert~ complex-mod~ loop~ lrshift~ pd~ stdout rev1~ rev2~ rev3~ bob~ output~
     }
-    set ::monolithic_externals {}
     ::completion::add_user_externals
     ::completion::add_user_customcompletions
-    ::completion::add_user_monolithiclist
     set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
     set ::all_externals [lsort -unique $::all_externals]
     ::completion::add_special_messages ;#AFTER sorting
@@ -222,7 +226,6 @@ proc ::completion::scan_all_completions {} {
     set finalTime [clock milliseconds]
     set delta [expr {$finalTime-$initTime}]
     set count [llength $::all_externals]
-    set count [expr {$count+[llength $::monolithic_externals]}]
     ::pdwindow::post "\[completion-plugin\] loaded $count completions in $delta milliseconds\n"
 }
 
@@ -268,7 +271,7 @@ proc ::completion::show_options_gui {} {
     #Options for background color
     label .options.f.click_to_choose_label -text "click to\nchoose"
     
-    label .options.f.bg_label -text "bkg color"
+    label .options.f.bg_label -text "normal mode background color"
     entry .options.f.bg_entry -width 8
     frame .options.f.bg_demo -background $::completion::config(bg) -width 40 -height 40
         bind .options.f.bg_demo <ButtonRelease> { ::completion::user_select_color "bg"}
@@ -276,29 +279,28 @@ proc ::completion::show_options_gui {} {
     
 
     #Options for skipping mode background color
-    label .options.f.skip_bg_label -text "skipping bkg color"
+    label .options.f.skip_bg_label -text "skipping mode background color"
     entry .options.f.skip_bg_entry -width 8
     frame .options.f.skip_bg_demo -background $::completion::config(skipbg) -width 40 -height 40
         bind .options.f.skip_bg_demo <ButtonRelease> { ::completion::user_select_color "skipbg"}
-    bind .options.f.skip_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.skip_bg_entry" ".options.f.skip_bg_demo" "skipbg" }
-    
+    bind .options.f.skip_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.skip_bg_entry" ".options.f.skip_bg_demo" "skipbg" }   
+
     #Options for monolithic mode background color
-    label .options.f.mono_bg_label -text "mono-object bkg color"
-    entry .options.f.mono_bg_entry -width 8
-    frame .options.f.mono_bg_demo -background $::completion::config(monobg) -width 40 -height 40
-        bind .options.f.mono_bg_demo <ButtonRelease> { ::completion::user_select_color "monobg"}
-    bind .options.f.mono_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.mono_bg_entry" ".options.f.mono_bg_demo" "monobg" }
-    
+#    label .options.f.mono_bg_label -text "mono-object bkg color"
+#    entry .options.f.mono_bg_entry -width 8
+#    frame .options.f.mono_bg_demo -background $::completion::config(monobg) -width 40 -height 40
+#        bind .options.f.mono_bg_demo <ButtonRelease> { ::completion::user_select_color "monobg"}
+#    bind .options.f.mono_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.mono_bg_entry" ".options.f.mono_bg_demo" "monobg" }
 
     #Misc
     checkbutton .options.f.auto_complete_libs -variable ::completion::config(auto_complete_libs) -onvalue 1 -offvalue 0
-    label .options.f.auto_complete_libs_label -text "Completion-plugin library names"
+    label .options.f.auto_complete_libs_label -text "Include library prefix"
 
     spinbox .options.f.number_of_lines -width 6 -from 3 -to 30 -textvariable ::completion::config(max_lines)
     label .options.f.number_of_lines_label -text "number of lines to display"
     
-    spinbox .options.f.maximum_scan_depth -width 6 -from 0 -to 10 -textvariable ::completion::config(max_scan_depth)
-    label .options.f.maximum_scan_depth_label -text "maximum scan depth"
+#    spinbox .options.f.maximum_scan_depth -width 6 -from 0 -to 10 -textvariable ::completion::config(max_scan_depth)
+#    label .options.f.maximum_scan_depth_label -text "maximum scan depth"
 
     spinbox .options.f.font_size -width 6 -from 7 -to 20 -textvariable ::completion::config(font_size)
     label .options.f.font_size_label -text "font size"
@@ -312,10 +314,10 @@ proc ::completion::show_options_gui {} {
     }
     
     #Buttons
-    button .options.f.save_btn -text "save to file" -command ::completion::write_config
-    button .options.f.default_btn -text "default" -command ::completion::restore_default_option
-    button .options.f.rescan_btn -text "rescan" -command ::completion::scan_all_completions
-    button .options.f.help_btn -text "manual" -command ::completion::open_help_file
+    button .options.f.save_btn -text "Save settings" -command ::completion::write_config
+    button .options.f.default_btn -text "Restore factory settings" -command ::completion::restore_default_option
+    button .options.f.rescan_btn -text "Rescan" -command ::completion::scan_all_completions
+    button .options.f.help_btn -text "Manual" -command ::completion::open_help_file
     #.options.f.help_btn configure -font {-family courier -size 12 -weight bold -slant italic}
     .options.f.help_btn configure -font {-weight bold}
 
@@ -347,11 +349,11 @@ proc ::completion::show_options_gui {} {
     incr current_row
 
     #maximum scan depth
-    grid .options.f.maximum_scan_depth_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-    grid .options.f.maximum_scan_depth -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
+#    grid .options.f.maximum_scan_depth_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
+#    grid .options.f.maximum_scan_depth -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
 
-    grid .options.f.click_to_choose_label -column 2 -row $current_row -padx $padding -pady $padding
-    incr current_row
+#    grid .options.f.click_to_choose_label -column 2 -row $current_row -padx $padding -pady $padding
+#    incr current_row
 
     # change background color
     grid .options.f.bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
@@ -366,10 +368,10 @@ proc ::completion::show_options_gui {} {
     incr current_row
 
     # change mono mode background color
-    grid .options.f.mono_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-    grid .options.f.mono_bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-    grid .options.f.mono_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
-    incr current_row
+#    grid .options.f.mono_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
+#    grid .options.f.mono_bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
+#    grid .options.f.mono_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
+#    incr current_row
     
     #hotkey stuff
     grid .options.f.hotkeylabel -column 0 -row $current_row -padx $padding -pady $padding
@@ -392,13 +394,13 @@ proc ::completion::update_options_gui {} {
     .options.f.status_label configure -text ""
     .options.f.bg_demo configure -background $::completion::config(bg)
     .options.f.skip_bg_demo configure -background $::completion::config(skipbg)
-    .options.f.mono_bg_demo configure -background $::completion::config(monobg)
+#    .options.f.mono_bg_demo configure -background $::completion::config(monobg)
     .options.f.bg_entry delete 0 end
     .options.f.bg_entry insert 0 $::completion::config(bg)
     .options.f.skip_bg_entry delete 0 end
     .options.f.skip_bg_entry insert 0 $::completion::config(skipbg)
-    .options.f.mono_bg_entry delete 0 end
-    .options.f.mono_bg_entry insert 0 $::completion::config(monobg)
+#    .options.f.mono_bg_entry delete 0 end
+#    .options.f.mono_bg_entry insert 0 $::completion::config(monobg)
     .options.f.hotkeyentry delete 0 end
     .options.f.hotkeyentry insert 0 $::completion::config(hotkey)
 }
@@ -414,12 +416,13 @@ proc ::completion::restore_default_option {} {
     set ::completion::config(font_size) 12
     set ::completion::config(bg) "#0a85fe"
     set ::completion::config(skipbg) "#0ad871"
-    set ::completion::config(monobg) "#9832ff"
+#    set ::completion::config(monobg) "#9832ff"
     set ::completion::config(fg) white
     set ::completion::config(offset) 0
     set ::completion::config(max_scan_depth) 1
-    set ::completion::config(auto_complete_libs) 1
+    set ::completion::config(auto_complete_libs) 0
     ::completion::update_options_gui
+    ::completion::write_config
 }
 
 proc ::completion::gui_options_update_color {entryWidget frameWidget configTag} {
@@ -546,7 +549,7 @@ proc ::completion::user_select_color {target} {
 # this function looks for objects in the current folder and recursively call itself for each subfolder
 # we read the subfolders because pd reads the subpatches!
 proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
-    variable external_filetype
+#    variable external_filetype
     if { [expr {$depth > $::completion::config(max_scan_depth)}] } {
         return
     }
@@ -559,19 +562,19 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     # list of pd files on the folder
     set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd] 
     #List of system depentent (*.pd_darwin, *.dll, *.pd_linux) files on the folder
-    set sys_dependent_files ""
+#    set sys_dependent_files ""
     # search each of extensions available in the OS (for example of macOS, *.pd_darwin,*.d_fat,*.d_i386,*.d_amd64,*.d_arm64)
-    foreach filetype $external_filetype {
-        set external_files [glob -directory $dir -nocomplain -types {f} -- $filetype]
-        if {$sys_dependent_files eq ""} {
-            set sys_dependent_files $external_files 
-        } else {
-            set sys_dependent_files [concat $external_files $sys_dependent_files]
-        }
-    }
-    set all_files [concat $pd_files $sys_dependent_files]
+#    foreach filetype $external_filetype {
+#        set external_files [glob -directory $dir -nocomplain -types {f} -- $filetype]
+#        if {$sys_dependent_files eq ""} {
+#            set sys_dependent_files $external_files 
+#        } else {
+#            set sys_dependent_files [concat $external_files $sys_dependent_files]
+#        }
+#    }
+#    set all_files [concat $pd_files $sys_dependent_files]
     # for all types of files
-    foreach filepath $all_files {
+    foreach filepath $pd_files {
         ::completion::debug_msg "     external = $filepath" "loaded_externals"
         set file_tail [file tail $filepath] ;# file extension
         set name_without_extension [file rootname $file_tail]
@@ -589,8 +592,14 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
             ::completion::debug_msg "       extension_path = $extension_path" "loaded_externals"
             ::completion::debug_msg "       file_tail = $file_tail" "loaded_externals"
             ::completion::debug_msg "       name_without_extension = $name_without_extension" "loaded_externals"
-        if {[string range $name_without_extension end-4 end] ne "-help"} {
-            lappend ::all_externals $extension_path$name_without_extension
+        if {[string range $name_without_extension end-4 end] eq "-help"} {
+#            ::pdwindow::post "name_without_extension = $name_without_extension\n"
+            set external_name [string range $name_without_extension 0 end-5]
+
+            ::completion::debug_msg "       external_name = $external_name" "loaded_externals"
+
+            lappend ::all_externals $extension_path$external_name
+#            lappend ::all_externals $external_name
             lappend ::loaded_libs $extension_path
         }
     }
@@ -607,27 +616,45 @@ proc ::completion::add_user_externals {} {
     foreach DIR $::sys_searchpath {
         ::completion::debug_msg "$DIR" "loaded_externals"
     }
-    foreach DIR $::sys_staticpath {
-        ::completion::debug_msg "static path $DIR" "loaded_externals"
-    }
+#    foreach DIR $::sys_staticpath {
+#        ::completion::debug_msg "static path $DIR" "loaded_externals"
+#    }
     #for each directory the user set in edit->preferences->path
-    set dynamic_and_static_paths [concat $::sys_searchpath $::sys_staticpath]
-    set pathlist $::sys_staticpath
-    set pathlist $dynamic_and_static_paths
-    foreach pathdir $pathlist {
-        set dir [file normalize $pathdir]
-        if { ! [file isdirectory $dir]} { ;#why Yvan was doing this check?
-            continue
+
+# old way, included 'extra'
+#    set dynamic_and_static_paths [concat $::sys_searchpath $::sys_staticpath]
+#    set pathlist $::sys_staticpath
+#    set pathlist $dynamic_and_static_paths
+# new way (we don't like extra anymore for quite some time, let's just use defautl externals folder):
+
+    set pathlist $::pd_docsdir::docspath/externals
+
+#    if {[namespace exists ::pd_docsdir]} {
+#        set pathlist $::pd_docsdir::get_externals_path
+#        ::pdwindow::post "pathlist: $pathlist\n"
+#    }
+
+    if {[namespace exists ::pd_docsdir] && [::pd_docsdir::externals_path_is_valid]} {
+        set pathlist [::pd_docsdir::get_externals_path] 
+        ::pdwindow::post "\[completion-plugin\] scanning: $pathlist\n"
+        foreach pathdir $pathlist {
+            set dir [file normalize $pathdir]
+            if { ! [file isdirectory $dir]} { ;#why Yvan was doing this check?
+                continue
+            }
+            ::completion::add_user_externalsOnFolder $pathdir 0
+            #foreach subdir [glob -directory $dir -nocomplain -types {d} *] {
+            #    ::completion::add_user_externalsOnFolder $subdir 1
+            #}
         }
-        ::completion::add_user_externalsOnFolder $pathdir 0
-        #foreach subdir [glob -directory $dir -nocomplain -types {d} *] {
-        #    ::completion::add_user_externalsOnFolder $subdir 1
-        #}
     }
+
+#    set pathlist $::pd_docsdir::get_externals_path
+#    ::pdwindow::post "pathlist: $pathlist\n"
+
     #remove duplicates from the loaded_libs
     set ::loaded_libs [lsort -unique $::loaded_libs]
 }
-
 
 
 #adds any completion set in any txt file under "custom_completions"
@@ -637,35 +664,6 @@ proc ::completion::add_user_customcompletions {} {
     foreach filename [glob -directory $userdir -nocomplain -types {f} -- \
                          *.txt] {
         ::completion::read_completionslist_file $filename
-    }
-}
-
-#reads objects stored into monolithic files (*.pd_darwin, *.dll, *.pd_linux)
-proc ::completion::add_user_monolithiclist {} {
-    ::completion::debug_msg "entering add user monolithic list" "entering_procs"
-        ::completion::debug_msg "::loaded_libs = $::loaded_libs" "loaded_externals"
-    set userdir [file join $::completion_plugin_path "monolithic_objects"]
-
-    # for each .txt file in /monolithic_objects
-    foreach filename [glob -directory $userdir -nocomplain -types {f} -- \
-                         *.txt] {
-        #  Slurp up the data file
-        set fp [open $filename r]
-        set file_data [read $fp]
-        foreach line $file_data {
-
-            # gets the lib name from the string
-            set lib [lindex [split $line /] 0]
-            set lib ${lib}/ ;# turns libName into libName/
-
-            # only if the user actually have that library installed
-            if { [expr [lsearch -nocase $::loaded_libs $lib] >= 0 ] } {
-                lappend ::monolithic_externals [split $line /]
-            }
-
-        }
-        close $fp
-        ::completion::debug_msg "======monolithic externals=======\n$::monolithic_externals" "loaded_externals"
     }
 }
 
@@ -821,30 +819,6 @@ proc ::completion::trigger {} {
     }
 }
 
-proc ::completion::monolithic_search {{text ""}} {
-    #set variables related to monolithic_search
-    ::completion::debug_msg "::completion::monolithic_search($text)" "searches"
-    set ::current_search_mode 2
-    if {[winfo exists .pop]} {
-        .pop.f.lb configure -selectbackground $::completion::config(monobg)
-    }
-    #do the search
-    set text [string range $text 1 end]
-    set results {}
-    ::completion::debug_msg "::completion::monolithic_search($text)" "searches"
-    foreach elem $::monolithic_externals {
-        #those are stored into a {libName objName} fashion
-        set libraryName [lindex $elem 0]
-        set objName [lindex $elem 1]
-        ::completion::debug_msg "::completion::monolithic_search\[$libraryName\/$objName\]" "searches"
-        lappend results "$libraryName\/$objName"
-    }
-    #::completion::debug_msg "----------results=\[$results"
-    set pattern "$text"
-    set pattern [::completion::fix_pattern $pattern]
-    set ::completions [lsearch -all -inline -regexp -nocase $results $pattern]
-}
-
 proc ::completion::skipping_search {{text ""}} {
     #set variables related to skipping_search
     ::completion::debug_msg "::completion::skipping_search($text)" "searches"
@@ -868,18 +842,15 @@ proc ::completion::skipping_search {{text ""}} {
 }
 
 # Searches for matches.
-# (this method detects the current search mode and returns after calling the right one it it happens to be monolithic or skipping.)
+# (this method detects the current search mode and returns after calling the right one 
+# if it happens to be normal or skipping.)
 proc ::completion::search {{text ""}} {
     ::completion::debug_msg "::completion::search($text)" "searches"
     ::completion::debug_msg "::completion_text_updated = $::completion_text_updated" "searches"
     # without the arg there are some bugs when keys come from listbox ;# what Yvan meant?
     set ::erase_text $::current_text
     #if starts with a . it is a skipping search
-    #if starts with a , it is a monolithic search
-    if {[string range $text 0 0] eq ","} {
-        ::completion::monolithic_search $text
-        return
-    } elseif {[string range $text 0 0] eq "."} {
+    if {[string range $text 0 0] eq "."} {
         ::completion::skipping_search $text
         return
     }
@@ -1055,13 +1026,6 @@ proc ::completion::choose_selected {} {
         set selected_index [.pop.f.lb curselection]
         ::completion::popup_destroy
         set choosen_item [lindex $::completions $selected_index]
-        #if we are on monolithic mode we should not write the "libName/"
-        if {$::current_search_mode eq 2} {
-            set libName [lindex [split $choosen_item /] 0]
-            set choosen_item [lindex [split $choosen_item /] 1]
-            # I'm addind this line just to have the option to print the lib name on the console but i don't think this is needed it apperas on the completions list.
-            #::pdwindow::post "auto complete: [lindex [split $choosen_item /] 0] is part of the $libName library\n\n"
-        }
         set isSpecialMsg [::completion::is_special_msg $choosen_item]
         if { $isSpecialMsg } {
             ::completion::erase_text
@@ -1425,7 +1389,6 @@ proc ::completion::popup_draw {} {
         switch -- $::current_search_mode {
             0 { set currentbackground $::completion::config(bg) }
             1 { set currentbackground $::completion::config(skipbg) }
-            2 { set currentbackground $::completion::config(monobg) }
         }
         
         listbox .pop.f.lb \

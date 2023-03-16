@@ -1,16 +1,22 @@
 # Changelog for Pure Data auto completion tcl plugin
 
-## v0.48.1 [UNRELEASED/UNFINISHED] (Alexandre Porres)
+## v0.49.0 (Alexandre Porres)
 
 ### Bug Fixes
 
-  * Sometimes we can have more than one binary in a library, such as one for intel mac and another for silicon mac. This would duplicate the object entry and this is now filtered to a single entry (thanks to Tomoya Matsuura)
-  - fixed wrongly-cased help file
+* "Monolithic" (single binary externals with many objects) search wasn't working and was removed. It was also a bad designed as it required the user to maintain a list of externals for monolithic objects We now have a new single method for searches looking for help files that fixes finding and loading Monolithic search. User can still have their own user added completions for more options. 
+* When searching for abstractions, the plugin could grab lots of garbage from helper abstractions that were not real objects, the new search method fixes this as well.
+
+*  Plugin would search a folder multiple times as it searched all included paths and the depth level was problematic as it would go to a deeper level if the folder was also included in the search, as it is common nowadays. Now we just search the 'External Install Directory' folder set in preferences path and search its containing folders as well. This and the new search method makes it all faster and simpler because the depth level parameter is not needed anymore (so it was removed).
+* plugin would include many duplicates with and without library prefix, this has been fixed as well
+* Fixed wrongly-cased 'help' file (which now has been renamed to 'manual')
   
 ### Improvements
 
   *  Fixed/updated Vanilla objects list.
   * 'Menlo' is now the default font for macOS, just like Pd uses.
+  * Interface has been simplified and new manual was written with more operational details.
+  
 
 ## v0.48.0 (Alexandre Porres)
 
