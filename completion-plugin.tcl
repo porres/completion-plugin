@@ -64,7 +64,7 @@ if {$::windowingsystem eq "aqua"} {
 } else {
     set ::completion::config(font) "DejaVu Sans Mono"    
 }
-set ::completion::config(font_size) 12 ;# should load pd's default
+set ::completion::config(font_size) [::pd_guiprefs::read menu-fontsize] ;# Pd's window size
 set ::completion::config(bg) "#0a85fe"
 set ::completion::config(skipbg) "#0ad871"
 #set ::completion::config(monobg) "#9832ff"
@@ -413,7 +413,7 @@ proc ::completion::restore_default_option {} {
     } else {
         set ::completion::config(font) "DejaVu Sans Mono"    
     }
-    set ::completion::config(font_size) 12
+    set ::completion::config(font_size) [::pd_guiprefs::read menu-fontsize] ;# Pd's window size
     set ::completion::config(bg) "#0a85fe"
     set ::completion::config(skipbg) "#0ad871"
 #    set ::completion::config(monobg) "#9832ff"
