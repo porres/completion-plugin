@@ -2,7 +2,8 @@
 
 ## v0.49.1
 
-* simplified interface to contain the same background color
+* simplified interface to contain a single color for highlighted selections
+* disabled autocompletion in messages
 
 ## v0.49.0 
 

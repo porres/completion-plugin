@@ -1,5 +1,3 @@
-# Copyright (c) 2011 yvan volochine <yvan.volochine@gmail.com>
-#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #     * Redistributions of source code must retain the above copyright
@@ -25,6 +23,7 @@
 
 # ==========================================
 
+# Copyright (c) 2011-2023 yvan, henri, porres
 # The original version was developed by Yvan Volochine in 2011. 7 years later Henri Augusto
 # embraced the project. Porres took over in 2023 
 # 
@@ -32,7 +31,6 @@
 
 package require Tcl 8.5
 package require pd_menucommands 0.1
-#package require dialog_path 0.1
 
 namespace eval ::dialog_path:: {
     variable use_standard_paths_button 1
@@ -57,7 +55,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 set ::completion::plugin_version "0.49.0"
 
 # default
-set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
+#set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
 set ::completion::config(max_lines) 10
 if {$::windowingsystem eq "aqua"} {
     set ::completion::config(font) "Menlo"
@@ -70,7 +68,7 @@ set ::completion::config(bg) "#0a85fe"
 #set ::completion::config(monobg) "#9832ff"
 set ::completion::config(fg) white
 set ::completion::config(offset) 0
-set ::completion::config(max_scan_depth) 1
+#set ::completion::config(max_scan_depth) 1
 set ::completion::config(auto_complete_libs) 0
 
 # some nice colors to try: #0a85fe #0ad871 #9832ff ; those are great: #ff9831 #ff00ee #012345
@@ -221,7 +219,7 @@ proc ::completion::scan_all_completions {} {
     ::completion::add_user_customcompletions
     set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
     set ::all_externals [lsort -unique $::all_externals]
-    ::completion::add_special_messages ;#AFTER sorting
+#    ::completion::add_special_messages ;#AFTER sorting
     
     set finalTime [clock milliseconds]
     set delta [expr {$finalTime-$initTime}]
@@ -274,7 +272,7 @@ proc ::completion::show_options_gui {} {
     label .options.f.bg_label -text "selection color"
     entry .options.f.bg_entry -width 8
     frame .options.f.bg_demo -background $::completion::config(bg) -width 40 -height 40
-        bind .options.f.bg_demo <ButtonRelease> { ::completion::user_select_color "bg"}
+    bind .options.f.bg_demo <ButtonRelease> { ::completion::user_select_color "bg"}
     bind .options.f.bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.bg_entry" ".options.f.bg_demo" "bg" }
     
 
@@ -320,7 +318,6 @@ proc ::completion::show_options_gui {} {
     button .options.f.help_btn -text "Manual" -command ::completion::open_help_file
     #.options.f.help_btn configure -font {-family courier -size 12 -weight bold -slant italic}
     .options.f.help_btn configure -font {-weight bold}
-
 
     set padding 2
 
@@ -419,7 +416,7 @@ proc ::completion::restore_default_option {} {
 #    set ::completion::config(monobg) "#9832ff"
     set ::completion::config(fg) white
     set ::completion::config(offset) 0
-    set ::completion::config(max_scan_depth) 1
+#    set ::completion::config(max_scan_depth) 1
     set ::completion::config(auto_complete_libs) 0
     ::completion::update_options_gui
     ::completion::write_config
@@ -429,7 +426,7 @@ proc ::completion::gui_options_update_color {entryWidget frameWidget configTag} 
     if { [regexp {^\#(\d|[a-f]){6}$} [$entryWidget get]] } {
         set ::completion::config($configTag) [$entryWidget get]
         $frameWidget configure -background $::completion::config($configTag)
-        # chagne color to show it's valid
+        # change color to show it's valid
         $entryWidget configure -foreground #000000
     } else {
         # chagne color to show it's INvalid
@@ -494,7 +491,7 @@ proc ::completion::write_config {{filename completion.cfg}} {
     set lines [::completion::write_config_variable $lines "max_lines"]
     set lines [::completion::write_config_variable $lines "font"]
     set lines [::completion::write_config_variable $lines "font_size"]
-    set lines [::completion::write_config_variable $lines "max_scan_depth"]
+#    set lines [::completion::write_config_variable $lines "max_scan_depth"]
     set lines [::completion::write_config_variable $lines "auto_complete_libs"]
     set lines [::completion::write_config_variable $lines "bg"]
     set lines [::completion::write_config_variable $lines "fg"]
@@ -550,9 +547,9 @@ proc ::completion::user_select_color {target} {
 # we read the subfolders because pd reads the subpatches!
 proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
 #    variable external_filetype
-    if { [expr {$depth > $::completion::config(max_scan_depth)}] } {
-        return
-    }
+#    if { [expr {$depth > $::completion::config(max_scan_depth)}] } {
+#        return
+#    }
     #::completion::debug_msg "external_filetype = $external_filetype" ;#just for debugging
     ::completion::debug_msg "===add_user_externalsOnFolder $dir===" "loaded_externals"
     ::completion::debug_msg "depth =  $depth" "loaded_externals"
@@ -579,7 +576,7 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
         set file_tail [file tail $filepath] ;# file extension
         set name_without_extension [file rootname $file_tail]
         set dir_name [file dirname $filepath] 
-        set how_many_folders_to_get [expr {$depth+0}]
+        set how_many_folders_to_get $depth
         set folder_name [lrange [file split $filepath] end-$how_many_folders_to_get end-1 ]
         set extension_path [join $folder_name \/]
         if {$extension_path ne ""} {
@@ -606,7 +603,7 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     #do the same for each subfolder (recursively)
     set depth [expr {$depth+1}]
     foreach subdir [glob -nocomplain -directory $dir -type d *] {
-        ::completion::add_user_externalsOnFolder $subdir $depth
+        ::completion::add_user_externalsOnFolder $subdir 1
     }
 }
 
@@ -626,8 +623,6 @@ proc ::completion::add_user_externals {} {
 #    set pathlist $::sys_staticpath
 #    set pathlist $dynamic_and_static_paths
 # new way (we don't like extra anymore for quite some time, let's just use defautl externals folder):
-
-    set pathlist $::pd_docsdir::docspath/externals
 
 #    if {[namespace exists ::pd_docsdir]} {
 #        set pathlist $::pd_docsdir::get_externals_path
@@ -771,7 +766,7 @@ proc ::completion::trigger {} {
                 ::completion::debug_msg "\[$::current_canvas itemcget $::current_tag -tags\] = $::tags_on_object_being_edited"
             set ::type_of_object_being_edited [lindex $::tags_on_object_being_edited 1]
                 ::completion::debug_msg "------>::type_of_object_being_edited = $::type_of_object_being_edited \n"
-            if { ($::type_of_object_being_edited ne "obj") && ($::type_of_object_being_edited ne "msg") } {
+            if { ($::type_of_object_being_edited ne "obj") } {
                 ::completion::debug_msg "the completion-plugin does not trigger for objects of type $::type_of_object_being_edited"
                 return
             }
@@ -973,51 +968,51 @@ proc ::completion::increment {{amount 1}} {
 }
 
 # store keywords (send/receive or array)
-proc ::completion_store {tag} {
-    # I'm disabling the unique names completion for now because i don't think it is desireable.
+#proc ::completion_store {tag} {
+    # I'm  (Henri) disabling the unique names completion for now because i don't think it is desireable.
     # While it does detects when the user type a new name it **doesn't** when those names are not 
     # used any more (user closed their containing patch, deleted their objects, etc).
     # Also it doesn't detect those names when the user loads an patch.
     # In future versions we should be able to do that communicating with PD directly.
-    return
-    ::completion::debug_msg "entering completion store" "entering_procs"
-    ::completion::debug_msg "   tag = $tag" "unique_names"
-    set name 0
-    set kind(sr) {s r send receive}
-    set kind(sra) {send~ receive~}
-    set kind(tc) {throw~ catch~}
-    set kind(arr) {tabosc4~ tabplay~ tabread tabread4 \
+#    return
+#    ::completion::debug_msg "entering completion store" "entering_procs"
+#    ::completion::debug_msg "   tag = $tag" "unique_names"
+#    set name 0
+#    set kind(sr) {s r send receive}
+#    set kind(sra) {send~ receive~}
+#    set kind(tc) {throw~ catch~}
+#    set kind(arr) {tabosc4~ tabplay~ tabread tabread4 \
                          tabread4~ tabread~ tabwrite tabwrite~}
-    set kind(del) {delread~     delwrite~}
+#    set kind(del) {delread~     delwrite~}
 
-    if {[regexp {^(s|r|send|receive)\s(\S+)$} $tag -> do_not_matter name]} {
-        set which sr
-    }
-    if {[regexp {^(send\~|receive\~)\s(\S+)$} $tag -> do_not_matter name]} {
-        set which sra
-    }
-    if {[regexp {^(throw\~|catch\~)\s(\S+)$} $tag -> do_not_matter name]} {
-        set which tc
-    }
-    if {[regexp {^tab\S+\s(\S+)$} $tag -> name]} {
-        set which arr
-    }
-    if {[regexp {^(delread\~|delwrite\~)\s(\S+)\s*\S*$} $tag -> do_not_matter name]} {
-        set which del
-        ::completion::debug_msg "4 do_not_matter = $do_not_matter" "unique_names"
-        ::completion::debug_msg "4 name = $name" "unique_names"
-    }
-    ::completion::debug_msg "Unique name = $name" "unique_names"
-    if {$name != 0} {
-        foreach key $kind($which) {
-            ::completion::debug_msg "key = $key" "unique_names"
-            if {[lsearch -all -inline -glob $::all_externals [list $key $name]] eq ""} {
-                lappend ::all_externals [list $key $name]
-                set ::all_externals [lsort $::all_externals]
-            }
-        }
-    }
-}
+#    if {[regexp {^(s|r|send|receive)\s(\S+)$} $tag -> do_not_matter name]} {
+#        set which sr
+#    }
+#    if {[regexp {^(send\~|receive\~)\s(\S+)$} $tag -> do_not_matter name]} {
+#        set which sra
+#    }
+#    if {[regexp {^(throw\~|catch\~)\s(\S+)$} $tag -> do_not_matter name]} {
+#        set which tc
+#    }
+#    if {[regexp {^tab\S+\s(\S+)$} $tag -> name]} {
+#        set which arr
+#    }
+#    if {[regexp {^(delread\~|delwrite\~)\s(\S+)\s*\S*$} $tag -> do_not_matter name]} {
+#        set which del
+#        ::completion::debug_msg "4 do_not_matter = $do_not_matter" "unique_names"
+#        ::completion::debug_msg "4 name = $name" "unique_names"
+#    }
+#    ::completion::debug_msg "Unique name = $name" "unique_names"
+#    if {$name != 0} {
+#        foreach key $kind($which) {
+#            ::completion::debug_msg "key = $key" "unique_names"
+#            if {[lsearch -all -inline -glob $::all_externals [list $key $name]] eq ""} {
+#                lappend ::all_externals [list $key $name]
+#                set ::all_externals [lsort $::all_externals]
+#            }
+#        }
+#    }
+#}
 
 #this is called when the user selects the desired external
 proc ::completion::choose_selected {} {
@@ -1026,13 +1021,13 @@ proc ::completion::choose_selected {} {
         set selected_index [.pop.f.lb curselection]
         ::completion::popup_destroy
         set choosen_item [lindex $::completions $selected_index]
-        set isSpecialMsg [::completion::is_special_msg $choosen_item]
-        if { $isSpecialMsg } {
-            ::completion::erase_text
-            ::completion::delete_obj_onspecialmsg
-        } else {
+#        set isSpecialMsg [::completion::is_special_msg $choosen_item]
+#        if { $isSpecialMsg } {
+#            ::completion::erase_text
+#            ::completion::delete_obj_onspecialmsg
+#        } else {
             ::completion::replace_text $choosen_item            
-        }
+#        }
         ::completion::debug_msg "----------->Selected word: $choosen_item" "char_manipulation"
         set ::current_text "" ;# clear for next search
         ::completion::set_empty_listbox
@@ -1042,17 +1037,17 @@ proc ::completion::choose_selected {} {
     }
 }
 
-proc ::completion::delete_obj_onspecialmsg {} {
+#proc ::completion::delete_obj_onspecialmsg {} {
     # will anybody ever read this mess? heh
     # well, this is still experimental software. I'll clean this up in the future :)
     # (dreaming of pd 1.0)
 
     #$::current_canvas configure -bg #00ff00
-    set rectangle "$::current_tag"
-    append rectangle "R"
-    ::completion::debug_msg "rectangle = $rectangle\n"
+#    set rectangle "$::current_tag"
+#    append rectangle "R"
+#    ::completion::debug_msg "rectangle = $rectangle\n"
     
-    $::current_canvas itemconfigure $rectangle -fill red
+#    $::current_canvas itemconfigure $rectangle -fill red
 
 
     # mimicking PD messages (using -d 1)
@@ -1069,35 +1064,35 @@ proc ::completion::delete_obj_onspecialmsg {} {
     #BUT they are created again when i exit exit mode
     #BUT they are created again when i exit exit mode
 
-    set coords [$::current_canvas coords $rectangle]
-    ::completion::debug_msg "coords = $coords\n"
+#    set coords [$::current_canvas coords $rectangle]
+#    ::completion::debug_msg "coords = $coords\n"
 
-        ::completion::debug_msg "::current_canvas = $::current_canvas\n"
-    set winfo_test "[winfo toplevel $::current_canvas]"
-        ::completion::debug_msg "winfo_test = $winfo_test\n"
+#        ::completion::debug_msg "::current_canvas = $::current_canvas\n"
+#    set winfo_test "[winfo toplevel $::current_canvas]"
+#        ::completion::debug_msg "winfo_test = $winfo_test\n"
 
-    set offset 1 ;# how much we're backing off before starting the selection
-    set x [lindex $coords 0]
-        set x [expr {$x-$offset}]
-    set y [lindex $coords 1]
-        set y [expr {$y-$offset}]
-    set w [expr $offset+1] ;# how much to go right, then
-    set h [expr $offset+1] ;# how much to go down, then
-    ::completion::debug_msg "x = $x\n"
-    ::completion::debug_msg "y = $y\n"
-    ::completion::debug_msg "w = $w\n"
-    ::completion::debug_msg "h = $h\n"
-    ::completion::debug_msg "\[expr \{$x+$w\}\] = [expr {$x+$w}]\n"
-
-    
-    pdsend "[winfo toplevel $::current_canvas] motion $x $y 0"
-    pdsend "[winfo toplevel $::current_canvas] mouse $x $y 1 0"
-    pdsend "[winfo toplevel $::current_canvas] motion [expr {$x+$w}] [expr {$y+$h}] 0"
-    pdsend "[winfo toplevel $::current_canvas] mouseup [expr {$x+$w}] [expr {$y+$h}] 1"
+#    set offset 1 ;# how much we're backing off before starting the selection
+#    set x [lindex $coords 0]
+#        set x [expr {$x-$offset}]
+#    set y [lindex $coords 1]
+#        set y [expr {$y-$offset}]
+#    set w [expr $offset+1] ;# how much to go right, then
+#    set h [expr $offset+1] ;# how much to go down, then
+#    ::completion::debug_msg "x = $x\n"
+#    ::completion::debug_msg "y = $y\n"
+#    ::completion::debug_msg "w = $w\n"
+#    ::completion::debug_msg "h = $h\n"
+#    ::completion::debug_msg "\[expr \{$x+$w\}\] = [expr {$x+$w}]\n"
 
     
-    pdsend "[winfo toplevel $::current_canvas] key 1 127 0" ;#delete = 127
-    pdsend "[winfo toplevel $::current_canvas] key 0 127 0" ;
+#    pdsend "[winfo toplevel $::current_canvas] motion $x $y 0"
+#    pdsend "[winfo toplevel $::current_canvas] mouse $x $y 1 0"
+#    pdsend "[winfo toplevel $::current_canvas] motion [expr {$x+$w}] [expr {$y+$h}] 0"
+#    pdsend "[winfo toplevel $::current_canvas] mouseup [expr {$x+$w}] [expr {$y+$h}] 1"
+
+    
+#    pdsend "[winfo toplevel $::current_canvas] key 1 127 0" ;#delete = 127
+#    pdsend "[winfo toplevel $::current_canvas] key 0 127 0" ;
     #pdsend "[winfo toplevel $::current_canvas] text 0" ;
 
     #WORK AROUND
@@ -1108,7 +1103,7 @@ proc ::completion::delete_obj_onspecialmsg {} {
     
     #$::current_canvas delete "all" ;#delete everything but the selected object is recreated
 
-}
+#}
 
 # The keypressed and key released methods just route their input to this proc and it does the rest
 proc ::completion::update_modifiers {key pressed_or_released} {
@@ -1280,34 +1275,34 @@ proc ::completion::replace_text {args} {
     #set ::current_text "" ; Not needed because choose_selected will empty that
 }
 
-proc ::completion::is_special_msg { msg } {
-    switch -- $msg {
-        "plugin::rescan" {
-             ::completion::scan_all_completions 
-             return 1
-        }
-        "plugin::options" {
-            ::completion::show_options_gui
-            return 1
-        }
-        "plugin::help" {
-            ::completion::open_help_file
-            return 1
-        }
-        "plugin::debug" {
-            set ::completion_debug [expr {!$::completion_debug}]
-            return 1
-        }
-    }
-    return 0
-}
+#proc ::completion::is_special_msg { msg } {
+#    switch -- $msg {
+#        "plugin::rescan" {
+#             ::completion::scan_all_completions 
+#             return 1
+#        }
+#        "plugin::options" {
+#            ::completion::show_options_gui
+#            return 1
+#        }
+#        "plugin::help" {
+#            ::completion::open_help_file
+#            return 1
+#        }
+#        "plugin::debug" {
+#            set ::completion_debug [expr {!$::completion_debug}]
+#            return 1
+#        }
+#    }
+#    return 0
+#}
 
-proc ::completion::add_special_messages {} {
-    set ::all_externals [linsert $::all_externals 0 "plugin::debug"]
-    set ::all_externals [linsert $::all_externals 0 "plugin::help"]
-    set ::all_externals [linsert $::all_externals 0 "plugin::options"]
-    set ::all_externals [linsert $::all_externals 0 "plugin::rescan"]
-}
+#proc ::completion::add_special_messages {} {
+#    set ::all_externals [linsert $::all_externals 0 "plugin::debug"]
+#    set ::all_externals [linsert $::all_externals 0 "plugin::help"]
+#    set ::all_externals [linsert $::all_externals 0 "plugin::options"]
+#    set ::all_externals [linsert $::all_externals 0 "plugin::rescan"]
+#}
 
 # called when user press Enter
 proc ::completion::choose_or_unedit {} {
@@ -1550,16 +1545,16 @@ proc ::completion::trimspaces {} {
 
 # just for testing purposes. Code would need to become more robust before 
 # being used to display stuff for the user
-proc ::completion::msgbox {str} {
-    toplevel .cpMsgBox$str
-    frame .cpMsgBox$str.f
-    label .cpMsgBox$str.f.l -text "$str" -padx 3m -pady 2m
-    button .cpMsgBox$str.f.okbtn -text "okay" -command "destroy .cpMsgBox$str"
+#proc ::completion::msgbox {str} {
+#    toplevel .cpMsgBox$str
+#    frame .cpMsgBox$str.f
+#    label .cpMsgBox$str.f.l -text "$str" -padx 3m -pady 2m
+#    button .cpMsgBox$str.f.okbtn -text "okay" -command "destroy .cpMsgBox$str"
     
-    pack .cpMsgBox$str.f
-    pack .cpMsgBox$str.f.l
-    pack .cpMsgBox$str.f.okbtn
-}
+#    pack .cpMsgBox$str.f
+#    pack .cpMsgBox$str.f.l
+#    pack .cpMsgBox$str.f.okbtn
+#}
 
 
 # just in case.
