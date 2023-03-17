@@ -64,9 +64,9 @@ if {$::windowingsystem eq "aqua"} {
 } else {
     set ::completion::config(font) "DejaVu Sans Mono"    
 }
-set ::completion::config(font_size) [::pd_guiprefs::read menu-fontsize] ;# Pd's window size
+set ::completion::config(font_size) 12 ;# should load pd's default
 set ::completion::config(bg) "#0a85fe"
-set ::completion::config(skipbg) "#0ad871"
+#set ::completion::config(skipbg) "#0ad871"
 #set ::completion::config(monobg) "#9832ff"
 set ::completion::config(fg) white
 set ::completion::config(offset) 0
@@ -271,7 +271,7 @@ proc ::completion::show_options_gui {} {
     #Options for background color
     label .options.f.click_to_choose_label -text "click to\nchoose"
     
-    label .options.f.bg_label -text "normal mode background color"
+    label .options.f.bg_label -text "selection color"
     entry .options.f.bg_entry -width 8
     frame .options.f.bg_demo -background $::completion::config(bg) -width 40 -height 40
         bind .options.f.bg_demo <ButtonRelease> { ::completion::user_select_color "bg"}
@@ -279,11 +279,11 @@ proc ::completion::show_options_gui {} {
     
 
     #Options for skipping mode background color
-    label .options.f.skip_bg_label -text "skipping mode background color"
-    entry .options.f.skip_bg_entry -width 8
-    frame .options.f.skip_bg_demo -background $::completion::config(skipbg) -width 40 -height 40
-        bind .options.f.skip_bg_demo <ButtonRelease> { ::completion::user_select_color "skipbg"}
-    bind .options.f.skip_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.skip_bg_entry" ".options.f.skip_bg_demo" "skipbg" }   
+#    label .options.f.skip_bg_label -text "skipping mode background color"
+#    entry .options.f.skip_bg_entry -width 8
+#    frame .options.f.skip_bg_demo -background $::completion::config(skipbg) -width 40 -height 40
+#        bind .options.f.skip_bg_demo <ButtonRelease> { ::completion::user_select_color "skipbg"}
+#    bind .options.f.skip_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.skip_bg_entry" ".options.f.skip_bg_demo" "skipbg" }   
 
     #Options for monolithic mode background color
 #    label .options.f.mono_bg_label -text "mono-object bkg color"
@@ -362,10 +362,10 @@ proc ::completion::show_options_gui {} {
     incr current_row
 
     # change skip mode background color
-    grid .options.f.skip_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-    grid .options.f.skip_bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-    grid .options.f.skip_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
-    incr current_row
+#    grid .options.f.skip_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
+#    grid .options.f.skip_bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
+#    grid .options.f.skip_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
+#    incr current_row
 
     # change mono mode background color
 #    grid .options.f.mono_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
@@ -393,12 +393,12 @@ proc ::completion::show_options_gui {} {
 proc ::completion::update_options_gui {} {
     .options.f.status_label configure -text ""
     .options.f.bg_demo configure -background $::completion::config(bg)
-    .options.f.skip_bg_demo configure -background $::completion::config(skipbg)
+#    .options.f.skip_bg_demo configure -background $::completion::config(skipbg)
 #    .options.f.mono_bg_demo configure -background $::completion::config(monobg)
     .options.f.bg_entry delete 0 end
     .options.f.bg_entry insert 0 $::completion::config(bg)
-    .options.f.skip_bg_entry delete 0 end
-    .options.f.skip_bg_entry insert 0 $::completion::config(skipbg)
+#    .options.f.skip_bg_entry delete 0 end
+#    .options.f.skip_bg_entry insert 0 $::completion::config(skipbg)
 #    .options.f.mono_bg_entry delete 0 end
 #    .options.f.mono_bg_entry insert 0 $::completion::config(monobg)
     .options.f.hotkeyentry delete 0 end
@@ -413,9 +413,9 @@ proc ::completion::restore_default_option {} {
     } else {
         set ::completion::config(font) "DejaVu Sans Mono"    
     }
-    set ::completion::config(font_size) [::pd_guiprefs::read menu-fontsize] ;# Pd's window size
+    set ::completion::config(font_size) 12
     set ::completion::config(bg) "#0a85fe"
-    set ::completion::config(skipbg) "#0ad871"
+#    set ::completion::config(skipbg) "#0ad871"
 #    set ::completion::config(monobg) "#9832ff"
     set ::completion::config(fg) white
     set ::completion::config(offset) 0
@@ -498,8 +498,8 @@ proc ::completion::write_config {{filename completion.cfg}} {
     set lines [::completion::write_config_variable $lines "auto_complete_libs"]
     set lines [::completion::write_config_variable $lines "bg"]
     set lines [::completion::write_config_variable $lines "fg"]
-    set lines [::completion::write_config_variable $lines "skipbg"]
-    set lines [::completion::write_config_variable $lines "monobg"]
+#    set lines [::completion::write_config_variable $lines "skipbg"]
+#    set lines [::completion::write_config_variable $lines "monobg"]
     set lines [::completion::write_config_variable $lines "offset"]
 
     #write the file
@@ -825,7 +825,7 @@ proc ::completion::skipping_search {{text ""}} {
     set ::current_search_mode 1
     # do we really need to check if the popup exists?
     if {[winfo exists .pop]} {
-        .pop.f.lb configure -selectbackground $::completion::config(skipbg)
+        .pop.f.lb configure -selectbackground $::completion::config(bg)
     }
     #do the search
     set text [string range $text 1 end]
@@ -1386,10 +1386,12 @@ proc ::completion::popup_draw {} {
         .pop.f configure -relief solid -borderwidth 1 -background white
 
         #is this needed?
-        switch -- $::current_search_mode {
-            0 { set currentbackground $::completion::config(bg) }
-            1 { set currentbackground $::completion::config(skipbg) }
-        }
+#        switch -- $::current_search_mode {
+#            0 { set currentbackground $::completion::config(bg) }
+#            1 { set currentbackground $::completion::config(skipbg) }
+#        }
+
+        set currentbackground $::completion::config(bg)
         
         listbox .pop.f.lb \
             -selectmode browse \
