@@ -20,10 +20,10 @@
 #X text 20 94 - The plugin scans the "Externals Instal Directory" set in "Path->Preferences" and its containing folders for help files in order to find externals to suggest. Note that the library name is included as a prefix so you know where the external comes from. The plugin also has a list of internal objects that do not come with a prefix (of course). You can also define your own suggestions in any .txt inside the folder "custom_completions"., f 54;
 #X text 399 607 Check the completion-plugin reamde for more details.;
 #X text 20 372 There is an extra search mode called "skipping" \, which requires you to start the search with "." (a period). If you type ".mfn" and the hotkey it searches anything that contains the 'm' \, 'f' and 'n' letters in that order. This gives you [makefilename] \, for instance., f 54;
-#X text 382 363 - You can choose highlight selection color.;
 #X text 382 292 - You can set maximum number of lines to display.;
 #X text 382 327 - You can set suggestion's font size.;
 #X text 382 465 - Clicking on 'Restore factory settings' restore back to the original settings., f 56;
 #X text 20 297 Use up/down arrow keys to navigate through suggested selections and press enter to choose it. The object selection is highlighted with a selection color that you can choose in preferences as well. Alternatively you can just click with the left mouse button onto a suggested object name., f 54;
+#X text 382 355 - You can choose highlight selection color. Clicking on the color preview rectangle lets you choose a color., f 56;
 #X connect 2 0 3 0;
 #X connect 10 0 2 0;
