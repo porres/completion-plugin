@@ -1,6 +1,16 @@
 # Changelog for Pure Data auto completion tcl plugin
 
-## v0.49.0 (Alexandre Porres)
+## v0.49.1
+
+* simplified interface, instead of two highlighted colors, we now have a single one and it is blue (as all selection colors in Pd are "blue")
+* disabled autocompletion in messages
+
+### Bug Fixes
+
+* fixed internal vanilla list again and also searching externals
+* included a (non-recommended) fallback mechanism for users that do not have pd_docsdir, this prevents a crash and not loading the plugin
+
+## v0.49.0 
 
 ### Bug Fixes
 
@@ -13,12 +23,12 @@
   
 ### Improvements
 
-  *  Fixed/updated Vanilla objects list.
-  * 'Menlo' is now the default font for macOS, just like Pd uses.
+  * Fixed/updated Vanilla objects list.
+  * "Menlo" is now the default font for macOS, just like Pd uses.
   * Interface has been simplified and new manual was written with more operational details.
   
 
-## v0.48.0 (Alexandre Porres)
+## v0.48.0 (Alexandre Torres Porres took over at this moment)
 
 ### Improvements
 
@@ -27,7 +37,7 @@
   * Fixed loading Help
   * Included new Vanilla objects included up to Pd 0.53-2
 
-## v0.47.1 (Henri Augusto)
+## v0.47.1
 
 ### Bug Fixes
 
@@ -37,7 +47,7 @@
 
   * Now Control+Shift+Up/Down are used to skip 10 rows up/down (consistent with Ctrl+Left/Right)
 
-## v0.47.0 (Henri Augusto)
+## v0.47.0 
 
 ### Bug Fixes
 
@@ -53,7 +63,7 @@
   * general cleanup of code
 
 
-## v0.47.0-test1 (Henri Augusto)
+## v0.47.0-test1
 
 ### new features
 
@@ -74,13 +84,13 @@
 
     -[namecanvas] suggestion, which was missing, was added
 
-## v0.46.1 (Henri Augusto)
+## v0.46.1
 
 ### Bug fixes
 
 * fixes a bug where the plugin tried to bind to _.pop_ after auto completing when **::completion::unique** was true.
 
-## v0.46.0 (Henri Augusto)
+## v0.46.0 
 
 ### new features
 
@@ -94,7 +104,7 @@
 * fixed a bug where scrolling with the mouse wheel was calling choose_selected. Fixed by checking `%b eq 1` inside the <ButtonRelease> event!
 
 
-## v0.45.0 (Henri Augusto)
+## v0.45.0 
 
 ### new features
 * now you can use shift+enter when **auto complete library names** is *false* to complete the library name.
@@ -107,7 +117,7 @@
 * Fixed a bug where you would get an error when trying to save the settings
 
 
-## v0.44.0 (Henri Augusto)
+## v0.44.0 (Henri Augusto took over at this moment)
 
 * *Major* overhaul and bugfix to the code to bring it up to working condition in par with pd 0.48 API.
 * Now the plugin seems to be working on Windows, Linux and OSX!
