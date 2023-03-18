@@ -62,7 +62,7 @@ if {$::windowingsystem eq "aqua"} {
 } else {
     set ::completion::config(font) "DejaVu Sans Mono"    
 }
-set ::completion::config(font_size) 12 ;# should load pd's default
+set ::completion::config(font_size) 12 ;# actually load patche's font size now
 set ::completion::config(bg) blue
 #set ::completion::config(bg) "#0a85fe"
 #set ::completion::config(skipbg) "#0ad871"
@@ -239,7 +239,7 @@ proc ::completion::show_options_gui {} {
 
     frame .options.f -padx 5 -pady 5
     label .options.f.title_label -text "Completion Plugin Settings"
-    .options.f.title_label configure -font [list $::completion::config(font) [expr {$::completion::config(font_size)+3}]]
+    .options.f.title_label configure -font [list $::completion::config(font) 20]
     
     label .options.f.status_label -text "" -foreground "#cc2222"
 
@@ -281,8 +281,8 @@ proc ::completion::show_options_gui {} {
 #    spinbox .options.f.maximum_scan_depth -width 6 -from 0 -to 10 -textvariable ::completion::config(max_scan_depth)
 #    label .options.f.maximum_scan_depth_label -text "maximum scan depth"
 
-    spinbox .options.f.font_size -width 6 -from 7 -to 20 -textvariable ::completion::config(font_size)
-    label .options.f.font_size_label -text "font size"
+#    spinbox .options.f.font_size -width 6 -from 7 -to 20 -textvariable ::completion::config(font_size)
+#    label .options.f.font_size_label -text "font size"
 
     #Hotkey
     label .options.f.hotkeylabel -text "hotkey (requires restart)"
@@ -322,9 +322,9 @@ proc ::completion::show_options_gui {} {
     incr current_row
 
     #font size
-    grid .options.f.font_size_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-    grid .options.f.font_size -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-    incr current_row
+#    grid .options.f.font_size_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
+#    grid .options.f.font_size -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
+#    incr current_row
 
     #maximum scan depth
 #    grid .options.f.maximum_scan_depth_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
@@ -391,7 +391,7 @@ proc ::completion::restore_default_option {} {
     } else {
         set ::completion::config(font) "DejaVu Sans Mono"    
     }
-    set ::completion::config(font_size) 12
+#    set ::completion::config(font_size) 12
     set ::completion::config(bg) blue
 #    set ::completion::config(bg) "#0a85fe"
 #    set ::completion::config(skipbg) "#0ad871"
@@ -472,7 +472,7 @@ proc ::completion::write_config {{filename completion.cfg}} {
     set lines [::completion::write_config_variable $lines "hotkey"]
     set lines [::completion::write_config_variable $lines "max_lines"]
     set lines [::completion::write_config_variable $lines "font"]
-    set lines [::completion::write_config_variable $lines "font_size"]
+#    set lines [::completion::write_config_variable $lines "font_size"]
 #    set lines [::completion::write_config_variable $lines "max_scan_depth"]
     set lines [::completion::write_config_variable $lines "auto_complete_libs"]
     set lines [::completion::write_config_variable $lines "bg"]
@@ -709,6 +709,11 @@ proc pdtk_text_editing {mytoplevel tag editing} {
 # this is called when the user enters the auto completion mode
 proc ::completion::trigger {} {
     ::completion::debug_msg "===entering trigger===" "entering_procs"
+
+    set font_info [$::current_canvas itemcget $::current_tag -font]
+    set fontsize [expr {[lindex $font_info 1] * -1}]
+    set ::completion::config(font_size) $fontsize 
+
     set ::waiting_trigger_keyrelease 1
         
     set ::is_shift_down 0
@@ -720,6 +725,7 @@ proc ::completion::trigger {} {
     } {
         #this code is responsible for reading any text already present in the object when you enter the autocomplete mode
         set ::current_text [$::current_canvas itemcget $::current_tag -text]
+
         ::completion::trimspaces
         ::completion::debug_msg "Text that was already in the box = $::current_text\n" "searches"
     }

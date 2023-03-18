@@ -1,5 +1,11 @@
 # Changelog for Pure Data auto completion tcl plugin
 
+## v0.50.0
+
+### Improvements
+
+* Font size is now automatically retrieved from the patch canvas
+
 ## v0.49.1
 
 * simplified interface, instead of two highlighted colors, we now have a single one and it is blue (as all selection colors in Pd are "blue")
