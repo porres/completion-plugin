@@ -224,8 +224,8 @@ proc ::completion::init_options_menu {} {
     }
 }
 
-#opens the plugin's help file (as called from the configuration window)
-proc ::completion::open_help_file {} {
+#opens the plugin's manual file (as called from the configuration window)
+proc ::completion::open_manual_file {} {
     set filename [file join $::completion_plugin_path "manual.pd"]
     open_file "$filename"
 }
@@ -239,8 +239,8 @@ proc ::completion::show_options_gui {} {
     wm title .options "Completion Plugin Settings"
 
     frame .options.f -padx 5 -pady 5
-    label .options.f.title_label -text "Completion Plugin Settings"
-    .options.f.title_label configure -font [list $::completion::config(font) 20]
+#    label .options.f.title_label -text "Completion Plugin Settings"
+#    .options.f.title_label configure -font [list $::completion::config(font) 20]
     
 #    label .options.f.status_label -text "" -foreground "#cc2222"
 #    label .options.f.status_label -text "" -foreground "#222222"
@@ -288,7 +288,7 @@ proc ::completion::show_options_gui {} {
 
     #Hotkey
     label .options.f.hotkeylabel -text "hotkey (requires restart)"
-    entry .options.f.hotkeyentry -width 22
+    entry .options.f.hotkeyentry -width 12
     .options.f.hotkeyentry insert 0 "$::completion::config(hotkey)"
     bind .options.f.hotkeyentry <KeyRelease> {
         set ::completion::config(hotkey) [.options.f.hotkeyentry get]
@@ -297,10 +297,11 @@ proc ::completion::show_options_gui {} {
     #Buttons
     button .options.f.save_btn -text "Save settings" -command ::completion::write_config
     button .options.f.default_btn -text "Restore factory settings" -command ::completion::restore_default_option
-    button .options.f.rescan_btn -text "Rescan" -command ::completion::scan_all_completions
-    button .options.f.help_btn -text "Manual" -command ::completion::open_help_file
-    #.options.f.help_btn configure -font {-family courier -size 12 -weight bold -slant italic}
-    .options.f.help_btn configure -font {-weight bold}
+    button .options.f.rescan_btn -text "Rescan externals" -command ::completion::scan_all_completions
+    .options.f.rescan_btn configure -font {-weight bold}
+    button .options.f.manual_btn -text "Open Manual" -command ::completion::open_manual_file
+    #.options.f.manual_btn configure -font {-family courier -size 12 -weight bold -slant italic}
+    .options.f.manual_btn configure -font {-weight bold}
 
     set padding 2
 
@@ -308,7 +309,7 @@ proc ::completion::show_options_gui {} {
 
     #setup main frame stuff
     grid .options.f -column 0 -row 0
-    grid .options.f.title_label -column 0 -row 0 -columnspan 3 -padx $padding -pady $padding
+#    grid .options.f.title_label -column 0 -row 0 -columnspan 3 -padx $padding -pady $padding
 
     #setup the rest
     set current_row 1
@@ -361,11 +362,11 @@ proc ::completion::show_options_gui {} {
     # Status labels and buttons
     #Is the status label used?
     #grid .options.f.status_label -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
-    grid .options.f.default_btn -column 1 -row $current_row -padx $padding -pady 8 -sticky "e"
-    grid .options.f.save_btn -column 2 -row $current_row -padx $padding -pady 8 -sticky "w"
-    grid .options.f.help_btn -column 0 -row $current_row -padx $padding -pady 8 -sticky "w"
+    grid .options.f.default_btn -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
+    grid .options.f.save_btn -column 1 -row $current_row -padx $padding -pady 8 -sticky "w"
     incr current_row
-    grid .options.f.rescan_btn -column 2 -row $current_row -padx $padding -pady 4 -sticky "ew"
+    grid .options.f.rescan_btn -column 0 -row $current_row -padx $padding -pady 4 -sticky "ew"
+    grid .options.f.manual_btn -column 1 -row $current_row -padx $padding -pady 8 -sticky "w"
 
     ::completion::update_options_gui
 }
