@@ -52,7 +52,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.49.1"
+set ::completion::plugin_version "0.50.0"
 
 # default
 #set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
@@ -103,9 +103,9 @@ set ::debug_key_event 0 ;#prints a message when a key event is processed
 set ::debug_searches 0 ;#messages about the performed searches
 set ::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
 set ::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
-set ::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
-set ::debug_settings 1 ;#messages related to storing [send/receive] names [tabread] names and alike.
-set ::debug_prefix 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
+# set ::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
+set ::debug_settings 1 ;#messages related to storing settings to a file.
+set ::debug_prefix 0 ;#messages related to adding prefix.
 
 #0 = normal
 #1 = skipping
@@ -764,7 +764,7 @@ proc ::completion::trigger {} {
                         set ::completion::config(n_lines) $::completion::config(max_lines)
                     }
                     ::completion::popup_draw
-                    ::completion::try_common_prefix
+#                    ::completion::try_common_prefix
                     ::completion::update_completions_gui
                     if {[::completion::unique] } {
                         ::completion::choose_selected ;#Henri: was replace_text. This is needed for the three modes
@@ -772,20 +772,21 @@ proc ::completion::trigger {} {
                         ::completion::set_empty_listbox
                         set completed_because_was_unique 1
                     }
-            } else {
+ #           } else {
                     
-                    if {[::completion::unique]} {
-                        ::completion::choose_selected
-                        set completed_because_was_unique 1
-                    } elseif { [llength $::completions] > 1 } {
-                        if {![::completion::try_common_prefix]} {
-                            ::completion::debug_msg "IF not common prefix\n"
+#                    if {[::completion::unique]} {
+#                        ::completion::choose_selected
+#                        set completed_because_was_unique 1
+#                    } elseif { [llength $::completions] > 1 } {
+#                        if {![::completion::try_common_prefix]} {
+#                            ::completion::debug_msg "IF not common prefix\n"
                             #::completion::increment ;#Henri: this would allow to cycle 
-                            # through the completions with Tab. I'm disabling that in favor of the arrow keys
-                        } else {
-                            ::completion::debug_msg "IF INDEED common prefix\n"
-                        }
-                    }
+                            # through the completions with Tab. I'm disabling that in 
+                            # favor of the arrow keys
+#                        } else {
+#                            ::completion::debug_msg "IF INDEED common prefix\n"
+#                        }
+ #                   }
             }
             # if the unique completion was used there will be no .pop to bind!
             if { !$completed_because_was_unique } {
