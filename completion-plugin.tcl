@@ -241,7 +241,8 @@ proc ::completion::show_options_gui {} {
     label .options.f.title_label -text "Completion Plugin Settings"
     .options.f.title_label configure -font [list $::completion::config(font) 20]
     
-    label .options.f.status_label -text "" -foreground "#cc2222"
+#    label .options.f.status_label -text "" -foreground "#cc2222"
+#    label .options.f.status_label -text "" -foreground "#222222"
 
     # COLORS
     #note that we are using KeyRelease bindings because using "-validate key" would not validate in the right time.
@@ -369,7 +370,7 @@ proc ::completion::show_options_gui {} {
 }
 
 proc ::completion::update_options_gui {} {
-    .options.f.status_label configure -text ""
+#    .options.f.status_label configure -text ""
 #    .options.f.bg_demo configure -background $::completion::config(bg)
 #    .options.f.skip_bg_demo configure -background $::completion::config(skipbg)
 #    .options.f.mono_bg_demo configure -background $::completion::config(monobg)
@@ -751,8 +752,8 @@ proc ::completion::trigger {} {
             bind $::current_canvas <KeyRelease> {::completion::text_keys %K}
             set completed_because_was_unique 0
             if {![winfo exists .pop]} {
-                    ::completion::popup_draw
                     ::completion::search $::current_text
+                    ::completion::popup_draw
                     ::completion::try_common_prefix
                     ::completion::update_completions_gui
                     if {[::completion::unique] } {
@@ -769,7 +770,8 @@ proc ::completion::trigger {} {
                     } elseif { [llength $::completions] > 1 } {
                         if {![::completion::try_common_prefix]} {
                             ::completion::debug_msg "IF not common prefix\n"
-                            #::completion::increment ;#Henri: this would allow to cycle through the completions with Tab. I'm disabling that in favor of the arrow keys
+                            #::completion::increment ;#Henri: this would allow to cycle 
+                            # through the completions with Tab. I'm disabling that in favor of the arrow keys
                         } else {
                             ::completion::debug_msg "IF INDEED common prefix\n"
                         }
@@ -898,10 +900,12 @@ proc ::completion::update_completions_gui {} {
     }
 }
 
+# I am disabling this (Porres)
+# I think it should suggest a completion even if it's just 1!
 proc ::completion::unique {} {
     ::completion::debug_msg "entering unique" "entering_procs"
-    return [expr {[llength $::completions] == 1
-                  && [::completion::valid]}]
+#    return [expr {[llength $::completions] == 1 && [::completion::valid]}]
+    return 0
 }
 
 proc ::completion::valid {} {
@@ -1466,7 +1470,8 @@ proc ::completion::popup_destroy {{unbind 0}} {
     set ::current_text ""
 }
 
-# Henri: i don't get exactly what this does. Commenting out those packs seems to have absolutely no effect in my system
+# Henri: i don't get exactly what this does. Commenting out those packs seems 
+# to have absolutely no effect in my system
 # pack documentation: https://www.tcl.tk/man/tcl/TkCmd/pack.htm#M11
 proc ::completion::scrollbar_check {} {
     ::completion::debug_msg "entering scrollbar_check" "entering_procs"
