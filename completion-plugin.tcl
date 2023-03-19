@@ -56,7 +56,8 @@ set ::completion::plugin_version "0.49.1"
 
 # default
 #set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
-set ::completion::config(max_lines) 10
+set ::completion::config(max_lines) 15
+set ::completion::config(n_lines) $::completion::config(max_lines)
 if {$::windowingsystem eq "aqua"} {
     set ::completion::config(font) "Menlo"
 } else {
@@ -276,8 +277,8 @@ proc ::completion::show_options_gui {} {
     checkbutton .options.f.auto_complete_libs -variable ::completion::config(auto_complete_libs) -onvalue 1 -offvalue 0
     label .options.f.auto_complete_libs_label -text "Include library prefix"
 
-    spinbox .options.f.number_of_lines -width 6 -from 3 -to 30 -textvariable ::completion::config(max_lines)
-    label .options.f.number_of_lines_label -text "number of lines to display"
+#    spinbox .options.f.number_of_lines -width 6 -from 3 -to 30 -textvariable ::completion::config(max_lines)
+#    label .options.f.number_of_lines_label -text "number of lines to display"
     
 #    spinbox .options.f.maximum_scan_depth -width 6 -from 0 -to 10 -textvariable ::completion::config(max_scan_depth)
 #    label .options.f.maximum_scan_depth_label -text "maximum scan depth"
@@ -318,9 +319,9 @@ proc ::completion::show_options_gui {} {
     incr current_row
 
     #number of lines
-    grid .options.f.number_of_lines_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-    grid .options.f.number_of_lines -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-    incr current_row
+#    grid .options.f.number_of_lines_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
+#    grid .options.f.number_of_lines -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
+#    incr current_row
 
     #font size
 #    grid .options.f.font_size_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
@@ -386,7 +387,8 @@ proc ::completion::update_options_gui {} {
 
 proc ::completion::restore_default_option {} {
     set ::completion::config(hotkey) "Alt_L"
-    set ::completion::config(max_lines) 10
+#    set ::completion::config(max_lines) 15
+#    set ::completion::config(n_lines) $::completion::config(max_lines)
     if {$::windowingsystem eq "aqua"} {
         set ::completion::config(font) "Menlo"
     } else {
@@ -471,7 +473,7 @@ proc ::completion::write_config {{filename completion.cfg}} {
 
     #process the lines
     set lines [::completion::write_config_variable $lines "hotkey"]
-    set lines [::completion::write_config_variable $lines "max_lines"]
+#    set lines [::completion::write_config_variable $lines "max_lines"]
     set lines [::completion::write_config_variable $lines "font"]
 #    set lines [::completion::write_config_variable $lines "font_size"]
 #    set lines [::completion::write_config_variable $lines "max_scan_depth"]
@@ -753,6 +755,13 @@ proc ::completion::trigger {} {
             set completed_because_was_unique 0
             if {![winfo exists .pop]} {
                     ::completion::search $::current_text
+                    set listsize [llength $::completions]
+                    if {$listsize < $::completion::config(max_lines)} {
+                        set ::completion::config(n_lines) $listsize
+                    #    ::pdwindow::post "listsize: $listsize\n"
+                    } else {
+                        set ::completion::config(n_lines) $::completion::config(max_lines)
+                    }
                     ::completion::popup_draw
                     ::completion::try_common_prefix
                     ::completion::update_completions_gui
@@ -1372,7 +1381,7 @@ proc ::completion::popup_draw {} {
         listbox .pop.f.lb \
             -selectmode browse \
             -width $popup_width \
-            -height $::completion::config(max_lines) \
+            -height $::completion::config(n_lines) \
             -listvariable ::completions -activestyle none \
             -highlightcolor $::completion::config(fg) \
             -selectbackground $currentbackground \

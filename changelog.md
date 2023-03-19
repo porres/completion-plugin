@@ -2,9 +2,11 @@
 
 ## v0.50.0
 
-### Improvements
+* Font size is now automatically retrieved from the patch canvas, no need to set it in preferences anymore. The font name and weight is also retrieved to match what's used for the object
+* Window is now as big as the number of found lines if less than the maximum size, so no need to worry and set it up. This also is now hardcoded to 15 and there's no need to worry about it in the settings.
+* If only a single suggestion is found, then it is made instead of completing for you.
 
-* Font size is now automatically retrieved from the patch canvas
+
 
 ## v0.49.1
 
