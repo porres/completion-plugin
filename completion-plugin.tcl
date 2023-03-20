@@ -781,7 +781,12 @@ proc ::completion::trigger {} {
 
     set font_info [$::completion::current_canvas itemcget $::completion::current_tag -font]
     set fontface [lindex $font_info 0]
-    set fontsize [expr {[lindex $font_info 1] * -1}]
+    set size [lindex $font_info 1]
+    set fontsize 12
+    if { $size ne "" } {
+        set fontsize [expr {$size * -1}]
+    }
+#    set fontsize [expr {[lindex $font_info 1] * -1}]
     set fontweight [lindex $font_info 2]
 
     set ::completion::config(font) $fontface 
