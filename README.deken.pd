@@ -1,6 +1,5 @@
-#N canvas 478 85 378 231 10;
+#N canvas 606 101 311 209 10;
 #X obj 44 16 cnv 11 190 21 empty empty Completion plugin 20 11 0 14 #202020 #fcfcfc 0;
-#X text 28 51 This is a tcl/tk plugin to autocomplete objects. If you downloaded this from 'deken' \, please restart Pd. When you do it \, check the terminal to confirm it's been installed by seeing something like:, f 52;
-#X obj 135 166 manual;
-#X text 27 132 Go to Pd->Preferences->Completion-plugin for more settings. There you can also open "manual" \, which calls this file:, f 52;
-#X text 102 106 [completion-plugin] version 0.49.0;
+#X obj 126 167 manual;
+#X text 28 51 This is a tcl/tk plugin to autocomplete objects. If you downloaded this from 'deken' \, please restart Pd. When you do it \, check the terminal to confirm it's been installed by seeing information on version \, paths that have been scanned and number of suggestions found., f 39;
+#X text 91 145 For more details \, see:, f 17;
