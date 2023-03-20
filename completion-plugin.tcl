@@ -55,7 +55,6 @@ rename pdtk_text_editing pdtk_text_editing_old
 set ::completion::plugin_version "0.50.0"
 
 # default
-#set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
 set ::completion::config(max_lines) 15
 set ::completion::config(n_lines) $::completion::config(max_lines)
 if {$::windowingsystem eq "aqua"} {
@@ -64,14 +63,15 @@ if {$::windowingsystem eq "aqua"} {
     set ::completion::config(font) "DejaVu Sans Mono"    
 }
 set ::completion::config(font_size) 12 ;# actually load patche's font size now
+set ::completion::config(font_weight) "normal" 
 set ::completion::config(bg) blue
+set ::completion::config(auto_complete_libs) 0
 #set ::completion::config(bg) "#0a85fe"
 #set ::completion::config(skipbg) "#0ad871"
 #set ::completion::config(monobg) "#9832ff"
-set ::completion::config(fg) white
-set ::completion::config(offset) 0
+#set ::completion::config(offset) 0
 #set ::completion::config(max_scan_depth) 1
-set ::completion::config(auto_complete_libs) 0
+#set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
 
 # some nice colors to try: #0a85fe #0ad871 #9832ff ; those are great: #ff9831 #ff00ee #012345
 
@@ -98,23 +98,24 @@ set ::completion::waiting_trigger_keyrelease 0
 #1 = true 0 = false
 set ::::completion::completion_debug 0 ;
 # debug categories
-set ::completion::debug_loaded_externals 0 ;#prints loaded externals
+set ::completion::debug_loaded_externals 1 ;#prints loaded externals
 set ::completion::debug_entering_procs 1 ;#prints a message when entering a proc
-set ::completion::debug_key_event 0 ;#prints a message when a key event is processed
-set ::completion::debug_searches 0 ;#messages about the performed searches
-set ::completion::debug_popup_gui 0 ;#messages related to the popup containing the code suggestions
-set ::completion::debug_char_manipulation 0 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
+set ::completion::debug_key_event 1 ;#prints a message when a key event is processed
+set ::completion::debug_searches 1 ;#messages about the performed searches
+set ::completion::debug_popup_gui 1 ;#messages related to the popup containing the code suggestions
+set ::completion::debug_char_manipulation 1 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
 # set ::completion::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
 set ::completion::debug_settings 1 ;#messages related to storing settings to a file.
-set ::completion::debug_prefix 0 ;#messages related to adding prefix.
+set ::completion::debug_prefix 1 ;#messages related to adding prefix.
 
-#0 = normal
-#1 = skipping
-set ::current_search_mode 0
+# (0 = normal / 1 = skipping)
+set ::completion::current_search_mode 0
 
-set ::all_externals {}
+set ::completion::all_externals {}
 
-#set ::loaded_libs {}
+#set ::completion::loaded_libs {}
+
+set ::completion::loaded_paths {}
 
 #useful function for debugging
 proc ::completion::msg_debug {dbgMsg {debugKey "none"}} {
@@ -153,7 +154,9 @@ proc ::completion::sendKeyDownAndUp {keynum} {
 proc ::completion::init {} {
 #    variable external_filetype
     set ::completion::plugin_path "$::current_plugin_loadpath"
-    ::pdwindow::post "\[completion-plugin\] version $::completion::plugin_version\n"
+    ::pdwindow::post "------------- completion-plugin -------------\n"
+    ::pdwindow::post "\n"
+    ::pdwindow::post "Version: $::completion::plugin_version\n"
     ::completion::read_config
     #::completion::read_extras
     # file types for each OS https://github.com/pure-data/externals-howto#library
@@ -175,7 +178,7 @@ proc ::completion::scan_all_completions {} {
     set initTime [clock milliseconds]
 
 # Vanilla internal objects
-    set ::all_externals { 
+    set ::completion::all_externals { 
         bang trigger route swap print float int value symbol makefilename send receive \
         pack unpack list append list\ prepend list\ store list\ split list\ trim list\ length list\ fromsymbol list\ tosymbol \
         tabread tabread4 tabwrite soundfiler table array\ define array\ size array\ sum array\ get array\ set array\ quantile array\ random array\ max array\ min \
@@ -199,12 +202,19 @@ proc ::completion::scan_all_completions {} {
     }
     ::completion::add_user_externals
     ::completion::add_user_customcompletions
-#    set ::loaded_libs {} ;#clear the loaded_libs because it was only used to scan the right objects located in multi-object distributions
-    set ::all_externals [lsort -unique $::all_externals]
+
+    # clear the loaded_libs because it was only used to scan 
+    # the right objects located in multi-object distributions
+#    set ::completion::loaded_libs {}
+    set ::completion::loaded_paths {}
+
+    set ::completion::all_externals [lsort -unique $::completion::all_externals]
 #    ::completion::add_special_messages ;#AFTER sorting
     
-    set count [llength $::all_externals]
-    ::pdwindow::post "\[completion-plugin\] loaded $count suggestions\n"
+    set count [llength $::completion::all_externals]
+    ::pdwindow::post "found $count suggestions\n"
+    ::pdwindow::post "\n"
+    ::pdwindow::post "------------- completion-plugin -------------\n"
 
 #    set finalTime [clock milliseconds]
 #    set delta [expr {$finalTime-$initTime}]
@@ -275,8 +285,8 @@ proc ::completion::show_options_gui {} {
 #    bind .options.f.mono_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.mono_bg_entry" ".options.f.mono_bg_demo" "monobg" }
 
     #Misc
-    checkbutton .options.f.auto_complete_libs -variable ::completion::config(auto_complete_libs) -onvalue 1 -offvalue 0
-    label .options.f.auto_complete_libs_label -text "Include library prefix"
+#    checkbutton .options.f.auto_complete_libs -variable ::completion::config(auto_complete_libs) -onvalue 1 -offvalue 0
+#    label .options.f.auto_complete_libs_label -text "Include library prefix"
 
 #    spinbox .options.f.number_of_lines -width 6 -from 3 -to 30 -textvariable ::completion::config(max_lines)
 #    label .options.f.number_of_lines_label -text "number of lines to display"
@@ -316,9 +326,9 @@ proc ::completion::show_options_gui {} {
     set current_row 1
 
     #auto complete libs
-    grid .options.f.auto_complete_libs_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-    grid .options.f.auto_complete_libs -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-    incr current_row
+#    grid .options.f.auto_complete_libs_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
+#    grid .options.f.auto_complete_libs -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
+#    incr current_row
 
     #number of lines
 #    grid .options.f.number_of_lines_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
@@ -397,14 +407,13 @@ proc ::completion::restore_default_option {} {
         set ::completion::config(font) "DejaVu Sans Mono"    
     }
 #    set ::completion::config(font_size) 12
-    set ::completion::config(bg) blue
+#    set ::completion::config(bg) blue
 #    set ::completion::config(bg) "#0a85fe"
 #    set ::completion::config(skipbg) "#0ad871"
 #    set ::completion::config(monobg) "#9832ff"
-    set ::completion::config(fg) white
-    set ::completion::config(offset) 0
+#    set ::completion::config(offset) 0
 #    set ::completion::config(max_scan_depth) 1
-    set ::completion::config(auto_complete_libs) 0
+#    set ::completion::config(auto_complete_libs) 0
     ::completion::update_options_gui
     ::completion::write_config
 }
@@ -476,15 +485,15 @@ proc ::completion::write_config {{filename completion.cfg}} {
     #process the lines
     set lines [::completion::write_config_variable $lines "hotkey"]
 #    set lines [::completion::write_config_variable $lines "max_lines"]
-    set lines [::completion::write_config_variable $lines "font"]
+#    set lines [::completion::write_config_variable $lines "font"]
 #    set lines [::completion::write_config_variable $lines "font_size"]
 #    set lines [::completion::write_config_variable $lines "max_scan_depth"]
-    set lines [::completion::write_config_variable $lines "auto_complete_libs"]
-    set lines [::completion::write_config_variable $lines "bg"]
-    set lines [::completion::write_config_variable $lines "fg"]
+#    set lines [::completion::write_config_variable $lines "auto_complete_libs"]
+#    set lines [::completion::write_config_variable $lines "bg"]
+#    set lines [::completion::write_config_variable $lines "fg"]
 #    set lines [::completion::write_config_variable $lines "skipbg"]
 #    set lines [::completion::write_config_variable $lines "monobg"]
-    set lines [::completion::write_config_variable $lines "offset"]
+#    set lines [::completion::write_config_variable $lines "offset"]
 
     #write the file
     set fp [open $filename w]
@@ -521,30 +530,28 @@ proc ::completion::write_config_variable {file_lines name} {
     return $file_lines
 }
 
-proc ::completion::user_select_color {target} {
-    set color [tk_chooseColor -title "Completion Plugin Settings: Choose a color" -initialcolor $::completion::config($target)]
-    if { $color eq ""} { 
-        return 
-    }
-    set ::completion::config($target) $color
-    ::completion::update_options_gui
-}
+#proc ::completion::user_select_color {target} {
+#    set color [tk_chooseColor -title "Completion Plugin Settings: Choose a color" -initialcolor $::completion::config($target)]
+#    if { $color eq ""} { 
+#        return 
+#    }
+#    set ::completion::config($target) $color
+#    ::completion::update_options_gui
+#}
 
 # this function looks for objects in the current folder and recursively call itself for each subfolder
 # we read the subfolders because pd reads the subpatches!
 proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
+    ::completion::msg_debug "===add_user_externalsOnFolder $dir===" "loaded_externals"
 #    variable external_filetype
 #    if { [expr {$depth > $::completion::config(max_scan_depth)}] } {
 #        return
 #    }
     #::completion::msg_debug "external_filetype = $external_filetype" ;#just for debugging
-    ::completion::msg_debug "===add_user_externalsOnFolder $dir===" "loaded_externals"
 #    ::completion::msg_debug "depth =  $depth" "loaded_externals"
 
     # i concatenate the result of two globs because for some reason i can't use glob with two patterns.
-    # I've tried using: {$external_filetype,*.pd}
-    # list of pd files on the folder
-    set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd] 
+    # I've tried using: {$external_filetype,*.pd} 
     #List of system depentent (*.pd_darwin, *.dll, *.pd_linux) files on the folder
 #    set sys_dependent_files ""
     # search each of extensions available in the OS (for example of macOS, *.pd_darwin,*.d_fat,*.d_i386,*.d_amd64,*.d_arm64)
@@ -557,7 +564,8 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
 #        }
 #    }
 #    set all_files [concat $pd_files $sys_dependent_files]
-    # for all types of files
+# list of pd files on the folder
+    set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd]
     foreach filepath $pd_files {
         ::completion::msg_debug "     external = $filepath" "loaded_externals"
         set file_tail [file tail $filepath] ;# file extension
@@ -569,7 +577,7 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
         if {$extension_path ne ""} {
             set extension_path $extension_path\/
         }
-            ::completion::msg_debug "       depth =  $depth" "loaded_externals"
+#            ::completion::msg_debug "       depth =  $depth" "loaded_externals"
             ::completion::msg_debug "       filepath = $filepath" "loaded_externals"
             ::completion::msg_debug "       dir_name = $dir_name" "loaded_externals"
             ::completion::msg_debug "       folder_name = $folder_name" "loaded_externals"
@@ -582,9 +590,9 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
 
             ::completion::msg_debug "       external_name = $external_name" "loaded_externals"
 
-            lappend ::all_externals $extension_path$external_name
-#            lappend ::all_externals $external_name
-#            lappend ::loaded_libs $extension_path
+            lappend ::completion::all_externals $extension_path$external_name
+#            lappend ::completion::all_externals $external_name
+#            lappend ::completion::loaded_libs $extension_path
         }
     }
     #do the same for each subfolder (recursively)
@@ -594,38 +602,94 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
 #    }
 }
 
+proc ::completion::search_static_temp {} {
+    set pathlist [concat $::sys_staticpath $::sys_temppath]
+    foreach pathdir $pathlist {
+#        ::pdwindow::post "extra pathdir: $pathdir\n"
+        set dir [file normalize $pathdir]
+        if { ! [file isdirectory $dir]} {
+            continue
+        }
+        lappend ::completion::loaded_paths $pathdir
+        ::pdwindow::post " - scanning: $dir\n"
+        ::completion::add_user_externalsOnFolder $dir 0
+        foreach subdir [glob -nocomplain -directory $dir -type d *] {
+            set folder_name [lrange [file split $pathdir] end end ]
+            if { $folder_name eq "extra" } {
+                set subdir_name [lrange [file split $subdir] end end ]
+#                ::pdwindow::post "extra extra extra -> subdir_name = $subdir_name\n"
+                if { $subdir eq "bob~" } { 
+                    return 
+                } elseif { $subdir_name eq "bonk~" } { 
+                    return 
+                } elseif { $subdir_name eq "choice" } { 
+                    return 
+                } elseif { $subdir_name eq "fiddle~" } { 
+                    return 
+                } elseif { $subdir_name eq "loop~" } { 
+                    return 
+                } elseif { $subdir_name eq "lrshift~" } { 
+                    return 
+                } elseif { $subdir_name eq "pd~" } { 
+                    return 
+                } elseif { $subdir_name eq "pique" } { 
+                    return 
+                } elseif { $subdir_name eq "sigmund~" } { 
+                    return 
+                } elseif { $subdir_name eq "stdout" } { 
+                    return 
+                } else { 
+                    lappend ::completion::loaded_paths $subdir
+                    ::completion::add_user_externalsOnFolder $subdir 1 
+                } 
+            } else {
+                lappend ::completion::loaded_paths $subdir
+                ::completion::add_user_externalsOnFolder $subdir 1
+            }
+        }
+    }   
+}
+
 # this proc runs the main search ::completion::add_user_externalsOnFolder into each main folder
 proc ::completion::add_user_externals {} {
     ::completion::msg_debug "-----searching add_user_externals-----" "loaded_externals"
     if {[namespace exists ::pd_docsdir] && [::pd_docsdir::externals_path_is_valid]} {
         # new preferred scanning way, faster and without duplicates
-        set pathlist [::pd_docsdir::get_externals_path] 
-        set dir [file normalize $pathlist]
-        ::pdwindow::post "\[completion-plugin\] scanning: $dir\n"
+        set path [::pd_docsdir::get_externals_path] 
+        lappend ::completion::loaded_paths $path
+        set dir [file normalize $path]
+        ::pdwindow::post " - scanning: $dir\n"
         ::completion::add_user_externalsOnFolder $dir 0
         foreach subdir [glob -nocomplain -directory $dir -type d *] {
-#            ::pdwindow::post "\[completion-plugin\] scanning: $subdir\n"
+            lappend ::completion::loaded_paths $subdir
             ::completion::add_user_externalsOnFolder $subdir 1
-#        }
-    } else { 
-        # deep scan, old way, with many duplicates and some garbage
-        # this is a fallback for users that are not using "pd_docsdir"
-        set pathlist [concat $::sys_searchpath $::sys_staticpath]
-        foreach pathdir $pathlist {
-            set dir [file normalize $pathdir]
-            if { ! [file isdirectory $dir]} {
-                continue
-            }
-            ::pdwindow::post "\[completion-plugin\] scanning: $dir\n"
+        }
+    } 
+    ::completion::search_static_temp 
+    # user added paths
+    set searchpaths [concat $::sys_searchpath]
+    set ::completion::loaded_paths [lsort -unique $::completion::loaded_paths]
+    foreach searchpath $searchpaths {
+        set dir [file normalize $searchpath]
+        set done_before 0
+        foreach paths $::completion::loaded_paths {
+            if { $dir eq $paths } {
+               set done_before 1
+               break
+            } 
+        }
+        if { ! $done_before } {
+            ::pdwindow::post " - scanning: $dir\n"
             ::completion::add_user_externalsOnFolder $dir 0
+            lappend ::completion::loaded_paths $dir
             foreach subdir [glob -nocomplain -directory $dir -type d *] {
-#                ::pdwindow::post "\[completion-plugin\] scanning: $subdir\n"
+                lappend ::completion::loaded_paths $subdir
                 ::completion::add_user_externalsOnFolder $subdir 1
             }
         }
-#    }
+    }
     #remove duplicates from the loaded_libs
-#    set ::loaded_libs [lsort -unique $::loaded_libs]
+#    set ::completion::loaded_libs [lsort -unique $::completion::loaded_libs]
 }
 
 
@@ -648,8 +712,8 @@ proc ::completion::read_completionslist_file {afile} {
             if {[string index $line 0] ne ";"
                 && [string index $line 0] ne " "
                 && [string index $line 0] ne ""
-                && [lsearch -exact $::all_externals $line] == -1} {
-                lappend ::all_externals $line
+                && [lsearch -exact $::completion::all_externals $line] == -1} {
+                lappend ::completion::all_externals $line
             }
         }
         close $fl
@@ -716,8 +780,13 @@ proc ::completion::trigger {} {
     ::completion::msg_debug "===entering trigger===" "entering_procs"
 
     set font_info [$::completion::current_canvas itemcget $::completion::current_tag -font]
+    set fontface [lindex $font_info 0]
     set fontsize [expr {[lindex $font_info 1] * -1}]
+    set fontweight [lindex $font_info 2]
+
+    set ::completion::config(font) $fontface 
     set ::completion::config(font_size) $fontsize 
+    set ::completion::config(font_weight) $fontweight 
 
     set ::completion::waiting_trigger_keyrelease 1
         
@@ -808,7 +877,7 @@ proc ::completion::trigger {} {
 proc ::completion::skipping_search {{text ""}} {
     #set variables related to skipping_search
     ::completion::msg_debug "::completion::skipping_search($text)" "searches"
-    set ::current_search_mode 1
+    set ::completion::current_search_mode 1
     # do we really need to check if the popup exists?
     if {[winfo exists .pop]} {
         .pop.f.lb configure -selectbackground $::completion::config(bg)
@@ -824,7 +893,7 @@ proc ::completion::skipping_search {{text ""}} {
     }
     ::completion::msg_debug "RegExp pattern  = $pattern" "searches"
     ::completion::msg_debug "--------------chars = $chars" "searches"
-    set ::completion::completions [lsearch -all -inline -regexp -nocase $::all_externals $pattern]
+    set ::completion::completions [lsearch -all -inline -regexp -nocase $::completion::all_externals $pattern]
 }
 
 # Searches for matches.
@@ -844,7 +913,7 @@ proc ::completion::search {{text ""}} {
     if {[winfo exists .pop.f.lb]} {
         .pop.f.lb configure -selectbackground $::completion::config(bg)
     }
-    set ::current_search_mode 0
+    set ::completion::current_search_mode 0
     if {$text ne ""} {
         ::completion::msg_debug "=searching for $text=" "searches"
         set ::completion::current_text $text
@@ -870,7 +939,7 @@ proc ::completion::search {{text ""}} {
     set pattern "$::completion::current_text"
     set pattern [::completion::fix_pattern $pattern]
 
-    set ::completion::completions [lsearch -all -inline -regexp -nocase $::all_externals $pattern]
+    set ::completion::completions [lsearch -all -inline -regexp -nocase $::completion::all_externals $pattern]
     if {$::should_restore} {
         set ::completion::current_text $::previous_current_text ;# restores the current text
         ::completion::msg_debug "restored current_text: $::completion::current_text" "searches"
@@ -999,9 +1068,9 @@ proc ::completion::increment {{amount 1}} {
 #    if {$name != 0} {
 #        foreach key $kind($which) {
 #            ::completion::msg_debug "key = $key" "unique_names"
-#            if {[lsearch -all -inline -glob $::all_externals [list $key $name]] eq ""} {
-#                lappend ::all_externals [list $key $name]
-#                set ::all_externals [lsort $::all_externals]
+#            if {[lsearch -all -inline -glob $::completion::all_externals [list $key $name]] eq ""} {
+#                lappend ::completion::all_externals [list $key $name]
+#                set ::completion::all_externals [lsort $::completion::all_externals]
 #            }
 #        }
 #    }
@@ -1291,10 +1360,10 @@ proc ::completion::replace_text {args} {
 #}
 
 #proc ::completion::add_special_messages {} {
-#    set ::all_externals [linsert $::all_externals 0 "plugin::completion::debug"]
-#    set ::all_externals [linsert $::all_externals 0 "plugin::help"]
-#    set ::all_externals [linsert $::all_externals 0 "plugin::options"]
-#    set ::all_externals [linsert $::all_externals 0 "plugin::rescan"]
+#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::completion::debug"]
+#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::help"]
+#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::options"]
+#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::rescan"]
 #}
 
 # called when user press Enter
@@ -1317,8 +1386,8 @@ proc ::completion::text_unedit {} {
 # this is called when the user press the BackSpace key (erases on char)
 proc ::completion::chop {} {
     ::completion::msg_debug "entering chop" "entering_procs"
-    #if the user press shift+backspace restart search
-    if {$::completion::is_shift_down} {
+    #if the user press shift+backspace restart search ?????
+    if {$::completion::is_shift_down} { 
         ::completion::msg_debug "shift+BackSpace = clearing search" "char_manipulation"
         ::completion::erase_text
         set ::completion::current_text ""
@@ -1350,7 +1419,7 @@ proc ::completion::popup_draw {} {
         set popup_width 40
         set menuheight 32
         if {$::windowingsystem ne "aqua"} { incr menuheight 24 }
-        incr menuheight $::completion::config(offset)
+#        incr menuheight $::completion::config(offset)
         set geom [wm geometry $::completion::toplevel]
         # fix weird bug on osx
         set decoLeft 0
@@ -1374,7 +1443,7 @@ proc ::completion::popup_draw {} {
         .pop.f configure -relief solid -borderwidth 1 -background white
 
         #is this needed?
-#        switch -- $::current_search_mode {
+#        switch -- $::completion::current_search_mode {
 #            0 { set currentbackground $::completion::config(bg) }
 #            1 { set currentbackground $::completion::config(skipbg) }
 #        }
@@ -1386,11 +1455,13 @@ proc ::completion::popup_draw {} {
             -width $popup_width \
             -height $::completion::config(n_lines) \
             -listvariable ::completion::completions -activestyle none \
-            -highlightcolor $::completion::config(fg) \
+            -highlightcolor white \
             -selectbackground $currentbackground \
-            -selectforeground $::completion::config(fg) \
+            -selectforeground white \
             -yscrollcommand [list .pop.f.sb set] -takefocus 1 \
             -disabledforeground #333333
+
+#-font {-family $::completion::config(font) -size $::completion::config(font_size) -weight $::completion::config(font_weight)} \
 
         pack .pop.f.lb -side left -expand 1 -fill both
         .pop.f.lb configure -relief flat \
