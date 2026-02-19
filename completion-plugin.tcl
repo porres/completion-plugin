@@ -150,6 +150,17 @@ proc ::completion::sendKeyDownAndUp {keynum} {
     pdsend "[winfo toplevel $::completion::current_canvas] key 0 $keynum 0"
 }
 
+# add menu entry in Pd
+proc ::completion::init_options_menu {} {
+    set mymenu .preferences
+    if { [catch {
+        $mymenu entryconfigure [_ "Completion-plugin"] -command {::completion::show_options_gui}
+    } _ ] } {
+        $mymenu add separator
+        $mymenu add command -label [_ "Completion-plugin"] -command {::completion::show_options_gui}
+    }
+}
+
 #called once upon plugin initialization
 proc ::completion::init {} {
 #    variable external_filetype
@@ -158,13 +169,6 @@ proc ::completion::init {} {
     ::pdwindow::post "\n"
     ::pdwindow::post "Version: $::completion::plugin_version\n"
     ::completion::read_config
-    #::completion::read_extras
-    # file types for each OS https://github.com/pure-data/externals-howto#library
-#    switch -- $::windowingsystem {
-#        "aqua"  { set external_filetype {*.pd_darwin *.d_fat *.d_i386 *.d_amd64 *.d_arm64} }
-#        "win32" { set external_filetype {*.dll *.m_i386 *.m_amd64} }
-#        "x11"   { set external_filetype {*.pd_linux *.l_fat *.l_i386 *.d_amd64 *.d_arm *.d_arm64} }
-#    }
     if {[catch {bind "completion-plugin" <$completion::config(hotkey)> {::completion::trigger; break;}} err]} {
         ::pdwindow::post "\n---Error while trying to bind the completion plugin hotkey---\n"
         ::pdwindow::post "      hotkey: $::completion::config(hotkey)\n"
@@ -221,20 +225,6 @@ proc ::completion::scan_all_completions {} {
 #    ::pdwindow::post "\[completion-plugin\] loading time took $delta ms\n"
 }
 
-proc ::completion::init_options_menu {} {
-    if {$::windowingsystem eq "aqua"} {
-        set mymenu .menubar.apple.preferences
-    } else {
-        set mymenu .menubar.file.preferences    
-    }
-    if { [catch {
-        $mymenu entryconfigure [_ "Completion-plugin"] -command {::completion::show_options_gui}
-    } _ ] } {
-        $mymenu add separator
-        $mymenu add command -label [_ "Completion-plugin"] -command {::completion::show_options_gui}
-    }
-}
-
 #opens the plugin's manual file (as called from the configuration window)
 proc ::completion::open_manual_file {} {
     set filename [file join $::completion::plugin_path "manual.pd"]
@@ -250,52 +240,9 @@ proc ::completion::show_options_gui {} {
     wm title .options "Completion Plugin Settings"
 
     frame .options.f -padx 5 -pady 5
-#    label .options.f.title_label -text "Completion Plugin Settings"
-#    .options.f.title_label configure -font [list $::completion::config(font) 20]
-    
-#    label .options.f.status_label -text "" -foreground "#cc2222"
-#    label .options.f.status_label -text "" -foreground "#222222"
-
-    # COLORS
-    #note that we are using KeyRelease bindings because using "-validate key" would not validate in the right time.
-    #ex: you would type a valid string #aabbcc and it would be invalid. Then on the next keypress (whichever it was) it would process #aabbcc
 
     #Options for background color
     label .options.f.click_to_choose_label -text "click to\nchoose"
-    
-#    label .options.f.bg_label -text "selection color"
-#    entry .options.f.bg_entry -width 8
-#    frame .options.f.bg_demo -background $::completion::config(bg) -width 40 -height 40
-#    bind .options.f.bg_demo <ButtonRelease> { ::completion::user_select_color "bg"}
-#    bind .options.f.bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.bg_entry" ".options.f.bg_demo" "bg" }
-    
-
-    #Options for skipping mode background color
-#    label .options.f.skip_bg_label -text "skipping mode background color"
-#    entry .options.f.skip_bg_entry -width 8
-#    frame .options.f.skip_bg_demo -background $::completion::config(skipbg) -width 40 -height 40
-#        bind .options.f.skip_bg_demo <ButtonRelease> { ::completion::user_select_color "skipbg"}
-#    bind .options.f.skip_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.skip_bg_entry" ".options.f.skip_bg_demo" "skipbg" }   
-
-    #Options for monolithic mode background color
-#    label .options.f.mono_bg_label -text "mono-object bkg color"
-#    entry .options.f.mono_bg_entry -width 8
-#    frame .options.f.mono_bg_demo -background $::completion::config(monobg) -width 40 -height 40
-#        bind .options.f.mono_bg_demo <ButtonRelease> { ::completion::user_select_color "monobg"}
-#    bind .options.f.mono_bg_entry <KeyRelease> { ::completion::gui_options_update_color ".options.f.mono_bg_entry" ".options.f.mono_bg_demo" "monobg" }
-
-    #Misc
-#    checkbutton .options.f.auto_complete_libs -variable ::completion::config(auto_complete_libs) -onvalue 1 -offvalue 0
-#    label .options.f.auto_complete_libs_label -text "Include library prefix"
-
-#    spinbox .options.f.number_of_lines -width 6 -from 3 -to 30 -textvariable ::completion::config(max_lines)
-#    label .options.f.number_of_lines_label -text "number of lines to display"
-    
-#    spinbox .options.f.maximum_scan_depth -width 6 -from 0 -to 10 -textvariable ::completion::config(max_scan_depth)
-#    label .options.f.maximum_scan_depth_label -text "maximum scan depth"
-
-#    spinbox .options.f.font_size -width 6 -from 7 -to 20 -textvariable ::completion::config(font_size)
-#    label .options.f.font_size_label -text "font size"
 
     #Hotkey
     label .options.f.hotkeylabel -text "hotkey (requires restart)"
@@ -324,46 +271,6 @@ proc ::completion::show_options_gui {} {
 
     #setup the rest
     set current_row 1
-
-    #auto complete libs
-#    grid .options.f.auto_complete_libs_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.auto_complete_libs -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-#    incr current_row
-
-    #number of lines
-#    grid .options.f.number_of_lines_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.number_of_lines -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-#    incr current_row
-
-    #font size
-#    grid .options.f.font_size_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.font_size -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-#    incr current_row
-
-    #maximum scan depth
-#    grid .options.f.maximum_scan_depth_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.maximum_scan_depth -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-
-#    grid .options.f.click_to_choose_label -column 2 -row $current_row -padx $padding -pady $padding
-#    incr current_row
-
-    # change background color
-#    grid .options.f.bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-#    grid .options.f.bg_demo -column 2 -row $current_row -padx $padding -pady $padding
-#    incr current_row
-
-    # change skip mode background color
-#    grid .options.f.skip_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.skip_bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-#    grid .options.f.skip_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
-#    incr current_row
-
-    # change mono mode background color
-#    grid .options.f.mono_bg_label -column 0 -row $current_row -padx $padding -pady $padding -sticky "e"
-#    grid .options.f.mono_bg_entry -column 1 -row $current_row -padx $padding -pady $padding -sticky "w"
-#    grid .options.f.mono_bg_demo -column 2 -row $current_row -padx $padding -pady $padding
-#    incr current_row
     
     #hotkey stuff
     grid .options.f.hotkeylabel -column 0 -row $current_row -padx $padding -pady $padding
@@ -383,16 +290,6 @@ proc ::completion::show_options_gui {} {
 }
 
 proc ::completion::update_options_gui {} {
-#    .options.f.status_label configure -text ""
-#    .options.f.bg_demo configure -background $::completion::config(bg)
-#    .options.f.skip_bg_demo configure -background $::completion::config(skipbg)
-#    .options.f.mono_bg_demo configure -background $::completion::config(monobg)
-#    .options.f.bg_entry delete 0 end
-#    .options.f.bg_entry insert 0 $::completion::config(bg)
-#    .options.f.skip_bg_entry delete 0 end
-#    .options.f.skip_bg_entry insert 0 $::completion::config(skipbg)
-#    .options.f.mono_bg_entry delete 0 end
-#    .options.f.mono_bg_entry insert 0 $::completion::config(monobg)
     .options.f.hotkeyentry delete 0 end
     .options.f.hotkeyentry insert 0 $::completion::config(hotkey)
 }
@@ -406,14 +303,6 @@ proc ::completion::restore_default_option {} {
     } else {
         set ::completion::config(font) "DejaVu Sans Mono"    
     }
-#    set ::completion::config(font_size) 12
-#    set ::completion::config(bg) blue
-#    set ::completion::config(bg) "#0a85fe"
-#    set ::completion::config(skipbg) "#0ad871"
-#    set ::completion::config(monobg) "#9832ff"
-#    set ::completion::config(offset) 0
-#    set ::completion::config(max_scan_depth) 1
-#    set ::completion::config(auto_complete_libs) 0
     ::completion::update_options_gui
     ::completion::write_config
 }
@@ -484,16 +373,6 @@ proc ::completion::write_config {{filename completion.cfg}} {
 
     #process the lines
     set lines [::completion::write_config_variable $lines "hotkey"]
-#    set lines [::completion::write_config_variable $lines "max_lines"]
-#    set lines [::completion::write_config_variable $lines "font"]
-#    set lines [::completion::write_config_variable $lines "font_size"]
-#    set lines [::completion::write_config_variable $lines "max_scan_depth"]
-#    set lines [::completion::write_config_variable $lines "auto_complete_libs"]
-#    set lines [::completion::write_config_variable $lines "bg"]
-#    set lines [::completion::write_config_variable $lines "fg"]
-#    set lines [::completion::write_config_variable $lines "skipbg"]
-#    set lines [::completion::write_config_variable $lines "monobg"]
-#    set lines [::completion::write_config_variable $lines "offset"]
 
     #write the file
     set fp [open $filename w]
@@ -530,40 +409,10 @@ proc ::completion::write_config_variable {file_lines name} {
     return $file_lines
 }
 
-#proc ::completion::user_select_color {target} {
-#    set color [tk_chooseColor -title "Completion Plugin Settings: Choose a color" -initialcolor $::completion::config($target)]
-#    if { $color eq ""} { 
-#        return 
-#    }
-#    set ::completion::config($target) $color
-#    ::completion::update_options_gui
-#}
-
 # this function looks for objects in the current folder and recursively call itself for each subfolder
 # we read the subfolders because pd reads the subpatches!
 proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
     ::completion::msg_debug "===add_user_externalsOnFolder $dir===" "loaded_externals"
-#    variable external_filetype
-#    if { [expr {$depth > $::completion::config(max_scan_depth)}] } {
-#        return
-#    }
-    #::completion::msg_debug "external_filetype = $external_filetype" ;#just for debugging
-#    ::completion::msg_debug "depth =  $depth" "loaded_externals"
-
-    # i concatenate the result of two globs because for some reason i can't use glob with two patterns.
-    # I've tried using: {$external_filetype,*.pd} 
-    #List of system depentent (*.pd_darwin, *.dll, *.pd_linux) files on the folder
-#    set sys_dependent_files ""
-    # search each of extensions available in the OS (for example of macOS, *.pd_darwin,*.d_fat,*.d_i386,*.d_amd64,*.d_arm64)
-#    foreach filetype $external_filetype {
-#        set external_files [glob -directory $dir -nocomplain -types {f} -- $filetype]
-#        if {$sys_dependent_files eq ""} {
-#            set sys_dependent_files $external_files 
-#        } else {
-#            set sys_dependent_files [concat $external_files $sys_dependent_files]
-#        }
-#    }
-#    set all_files [concat $pd_files $sys_dependent_files]
 # list of pd files on the folder
     set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd]
     foreach filepath $pd_files {
@@ -595,11 +444,6 @@ proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
 #            lappend ::completion::loaded_libs $extension_path
         }
     }
-    #do the same for each subfolder (recursively)
-#    set depth [expr {$depth+1}]
-#    foreach subdir [glob -nocomplain -directory $dir -type d *] {
-#        ::completion::add_user_externalsOnFolder $subdir $depth
-#    }
 }
 
 proc ::completion::search_static_temp {} {
@@ -761,14 +605,6 @@ proc pdtk_text_editing {mytoplevel tag editing} {
         if {[string first "completion-plugin" [bindtags $::completion::current_canvas] ] eq -1} {
             bindtags $::completion::current_canvas "completion-plugin [bindtags $::completion::current_canvas]"
         }
-        #delete_if {[string first [bindtags $::completion::current_canvas] "test"] eq -1} {
-        #delete_    bindtags $::completion::current_canvas "test [bindtags $::completion::current_canvas]"
-        #delete_}
-        #delete_#bind $::completion::current_canvas <$completion::config(hotkey)> {+::completion::trigger;break;}
-        #delete_::pdwindow::post "-----EDITING------\n"
-        #delete_::pdwindow::post "current_canvas: $::completion::current_canvas\n"
-        #delete_set dbg [bindtags $::completion::current_canvas]
-        #delete_::pdwindow::post "bindtags: $dbg\n"
     }
     set ::completion::new_object $editing
     $tkcanvas focus $tag
@@ -847,21 +683,6 @@ proc ::completion::trigger {} {
                         ::completion::set_empty_listbox
                         set completed_because_was_unique 1
                     }
- #           } else {
-                    
-#                    if {[::completion::unique]} {
-#                        ::completion::choose_selected
-#                        set completed_because_was_unique 1
-#                    } elseif { [llength $::completion::completions] > 1 } {
-#                        if {![::completion::try_common_prefix]} {
-#                            ::completion::msg_debug "IF not common prefix\n"
-                            #::completion::increment ;#Henri: this would allow to cycle 
-                            # through the completions with Tab. I'm disabling that in 
-                            # favor of the arrow keys
-#                        } else {
-#                            ::completion::msg_debug "IF INDEED common prefix\n"
-#                        }
- #                   }
             }
             # if the unique completion was used there will be no .pop to bind!
             if { !$completed_because_was_unique } {
@@ -1034,53 +855,6 @@ proc ::completion::increment {{amount 1}} {
     .pop.f.lb see $updated
 }
 
-# store keywords (send/receive or array)
-#proc ::completion_store {tag} {
-    # I'm  (Henri) disabling the unique names completion for now because i don't think it is desireable.
-    # While it does detects when the user type a new name it **doesn't** when those names are not 
-    # used any more (user closed their containing patch, deleted their objects, etc).
-    # Also it doesn't detect those names when the user loads an patch.
-    # In future versions we should be able to do that communicating with PD directly.
-#    return
-#    ::completion::msg_debug "entering completion store" "entering_procs"
-#    ::completion::msg_debug "   tag = $tag" "unique_names"
-#    set name 0
-#    set kind(sr) {s r send receive}
-#    set kind(sra) {send~ receive~}
-#    set kind(tc) {throw~ catch~}
-#    set kind(arr) {tabosc4~ tabplay~ tabread tabread4 \
-                         tabread4~ tabread~ tabwrite tabwrite~}
-#    set kind(del) {delread~     delwrite~}
-
-#    if {[regexp {^(s|r|send|receive)\s(\S+)$} $tag -> do_not_matter name]} {
-#        set which sr
-#    }
-#    if {[regexp {^(send\~|receive\~)\s(\S+)$} $tag -> do_not_matter name]} {
-#        set which sra
-#    }
-#    if {[regexp {^(throw\~|catch\~)\s(\S+)$} $tag -> do_not_matter name]} {
-#        set which tc
-#    }
-#    if {[regexp {^tab\S+\s(\S+)$} $tag -> name]} {
-#        set which arr
-#    }
-#    if {[regexp {^(delread\~|delwrite\~)\s(\S+)\s*\S*$} $tag -> do_not_matter name]} {
-#        set which del
-#        ::completion::msg_debug "4 do_not_matter = $do_not_matter" "unique_names"
-#        ::completion::msg_debug "4 name = $name" "unique_names"
-#    }
-#    ::completion::msg_debug "Unique name = $name" "unique_names"
-#    if {$name != 0} {
-#        foreach key $kind($which) {
-#            ::completion::msg_debug "key = $key" "unique_names"
-#            if {[lsearch -all -inline -glob $::completion::all_externals [list $key $name]] eq ""} {
-#                lappend ::completion::all_externals [list $key $name]
-#                set ::completion::all_externals [lsort $::completion::all_externals]
-#            }
-#        }
-#    }
-#}
-
 #this is called when the user selects the desired external
 proc ::completion::choose_selected {} {
     ::completion::msg_debug "entering choose selected" "entering_procs"
@@ -1103,74 +877,6 @@ proc ::completion::choose_selected {} {
         ::completion::msg_debug "end of choose_selected current_text: $::completion::current_text" "char_manipulation"
     }
 }
-
-#proc ::completion::delete_obj_onspecialmsg {} {
-    # will anybody ever read this mess? heh
-    # well, this is still experimental software. I'll clean this up in the future :)
-    # (dreaming of pd 1.0)
-
-    #$::completion::current_canvas configure -bg #00ff00
-#    set rectangle "$::completion::current_tag"
-#    append rectangle "R"
-#    ::completion::msg_debug "rectangle = $rectangle\n"
-    
-#    $::completion::current_canvas itemconfigure $rectangle -fill red
-
-
-    # mimicking PD messages (using -d 1)
-    # pdtk_undomenu $::completion::current_canvas clear no
-    # pdtk_undomenu $::completion::current_canvas clear no
-    # $::completion::current_canvas itemconfigure $rectangle -fill black
-    # $::completion::current_canvas itemconfigure $::completion::current_tag -fill black
-    # pdtk_undomenu $::completion::current_canvas clear no
-
-    #$::completion::current_canvas delete $::completion::current_tag ;#THIS ACTUALLY REMOVES THE TEXT THE USER IS TYPING
-    #$::completion::current_canvas delete $rectangle ;#THIS removes the rectangle
-
-    #BUT they are created again when i exit exit mode
-    #BUT they are created again when i exit exit mode
-    #BUT they are created again when i exit exit mode
-
-#    set coords [$::completion::current_canvas coords $rectangle]
-#    ::completion::msg_debug "coords = $coords\n"
-
-#        ::completion::msg_debug "::completion::current_canvas = $::completion::current_canvas\n"
-#    set winfo_test "[winfo toplevel $::completion::current_canvas]"
-#        ::completion::msg_debug "winfo_test = $winfo_test\n"
-
-#    set offset 1 ;# how much we're backing off before starting the selection
-#    set x [lindex $coords 0]
-#        set x [expr {$x-$offset}]
-#    set y [lindex $coords 1]
-#        set y [expr {$y-$offset}]
-#    set w [expr $offset+1] ;# how much to go right, then
-#    set h [expr $offset+1] ;# how much to go down, then
-#    ::completion::msg_debug "x = $x\n"
-#    ::completion::msg_debug "y = $y\n"
-#    ::completion::msg_debug "w = $w\n"
-#    ::completion::msg_debug "h = $h\n"
-#    ::completion::msg_debug "\[expr \{$x+$w\}\] = [expr {$x+$w}]\n"
-
-    
-#    pdsend "[winfo toplevel $::completion::current_canvas] motion $x $y 0"
-#    pdsend "[winfo toplevel $::completion::current_canvas] mouse $x $y 1 0"
-#    pdsend "[winfo toplevel $::completion::current_canvas] motion [expr {$x+$w}] [expr {$y+$h}] 0"
-#    pdsend "[winfo toplevel $::completion::current_canvas] mouseup [expr {$x+$w}] [expr {$y+$h}] 1"
-
-    
-#    pdsend "[winfo toplevel $::completion::current_canvas] key 1 127 0" ;#delete = 127
-#    pdsend "[winfo toplevel $::completion::current_canvas] key 0 127 0" ;
-    #pdsend "[winfo toplevel $::completion::current_canvas] text 0" ;
-
-    #WORK AROUND
-
-    #QUERY INFORMATION ABOUT THE $rectlange position and mimic mouse and keyboard behavior (ghostPatching) by sendin input messages do pd engine to delete the object!
-
-    #$::completion::current_canvas itemconfigure $::completion::current_tag TK_CONFIG_COLOR #ff0000
-    
-    #$::completion::current_canvas delete "all" ;#delete everything but the selected object is recreated
-
-#}
 
 # The keypressed and key released methods just route their input to this proc and it does the rest
 proc ::completion::update_modifiers {key pressed_or_released} {
@@ -1237,16 +943,6 @@ proc ::completion::lb_keyrelease {key unicode} {
         "plus" { ::completion::insert_key "+" }
         "minus" { ::completion::insert_key "-" }
     }
-    # I've tried adding those but without success
-    # maybe i should do like the solution i've used for this: 
-    # https://github.com/HenriAugusto/completion-plugin/issues/21
-    # "parenleft" { ::completion::insert_key "\(" }
-    # "parenright" { ::completion::insert_key "\)" }
-    # "bracketleft" { ::completion::insert_key "\[" }
-    # "bracketright" { ::completion::insert_key "\]" }
-    # "braceleft" { ::completion::insert_key "\{" }
-    # "braceright" { ::completion::insert_key "\}" }
-    # "backslash" { ::completion::insert_key "\\" }
 }
 
 # keys from textbox (the box where you tipe stuff in PD)
@@ -1342,35 +1038,6 @@ proc ::completion::replace_text {args} {
     #set ::completion::current_text "" ; Not needed because choose_selected will empty that
 }
 
-#proc ::completion::is_special_msg { msg } {
-#    switch -- $msg {
-#        "plugin::rescan" {
-#             ::completion::scan_all_completions 
-#             return 1
-#        }
-#        "plugin::options" {
-#            ::completion::show_options_gui
-#            return 1
-#        }
-#        "plugin::help" {
-#            ::completion::open_help_file
-#            return 1
-#        }
-#        "plugin::completion::debug" {
-#            set ::::completion::completion_debug [expr {!$::::completion::completion_debug}]
-#            return 1
-#        }
-#    }
-#    return 0
-#}
-
-#proc ::completion::add_special_messages {} {
-#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::completion::debug"]
-#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::help"]
-#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::options"]
-#    set ::completion::all_externals [linsert $::completion::all_externals 0 "plugin::rescan"]
-#}
-
 # called when user press Enter
 proc ::completion::choose_or_unedit {} {
     ::completion::msg_debug "entering choose or unedit" "entering_procs"
@@ -1446,12 +1113,6 @@ proc ::completion::popup_draw {} {
 
         pack configure .pop.f
         .pop.f configure -relief solid -borderwidth 1 -background white
-
-        #is this needed?
-#        switch -- $::completion::current_search_mode {
-#            0 { set currentbackground $::completion::config(bg) }
-#            1 { set currentbackground $::completion::config(skipbg) }
-#        }
 
         set currentbackground $::completion::config(bg)
         
@@ -1584,48 +1245,9 @@ proc ::completion::prefix {s1 s2} {
     return $pref
 }
 
-#proc ::completion::try_common_prefix {} {
-#    set found 0
-#    set prefix [::completion::common_prefix]
-#    if {$prefix ne $::completion::current_text && $prefix ne ""} {
-#        ::completion::replace_text $prefix
-#        # prevent errors in pdtk_text_editing
-#        catch { focus .pop.f.lb }
-#        set ::completion::current_text $prefix
-#        set found 1
-#    }
-#    ::completion::msg_debug "try common prefix output = $found" "prefix"
-#    return $found
-#}
-
-#proc ::completion::common_prefix {} {
-#    set prefix ""
-#    if {[llength $::completion::completions] > 1} {
-#        set prefix [::completion::prefix \
-#                        [lindex $::completion::completions 0] \
-#                        [lindex $::completion::completions end]]
-#    }
-#    ::completion::msg_debug "common prefix output = $prefix" "prefix"
-#    return $prefix
-#}
-
 proc ::completion::trimspaces {} {
     set ::completion::current_text [string trimright $::completion::current_text " "]
 }
-
-# just for testing purposes. Code would need to become more robust before 
-# being used to display stuff for the user
-#proc ::completion::msgbox {str} {
-#    toplevel .cpMsgBox$str
-#    frame .cpMsgBox$str.f
-#    label .cpMsgBox$str.f.l -text "$str" -padx 3m -pady 2m
-#    button .cpMsgBox$str.f.okbtn -text "okay" -command "destroy .cpMsgBox$str"
-    
-#    pack .cpMsgBox$str.f
-#    pack .cpMsgBox$str.f.l
-#    pack .cpMsgBox$str.f.okbtn
-#}
-
 
 # just in case.
 bind all <$::modifier-Key-Return> {pdsend "$::completion::focused_window reselect"}
