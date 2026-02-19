@@ -152,13 +152,10 @@ proc ::completion::sendKeyDownAndUp {keynum} {
 
 # add menu entry in Pd
 proc ::completion::init_options_menu {} {
-    set mymenu .preferences
-    if { [catch {
-        $mymenu entryconfigure [_ "Completion-plugin"] -command {::completion::show_options_gui}
-    } _ ] } {
-        $mymenu add separator
-        $mymenu add command -label [_ "Completion-plugin"] -command {::completion::show_options_gui}
-    }
+    .preferences add separator
+    .preferences add command \
+        -label [_ "Completion-plugin"] \
+        -command {::completion::show_options_gui}
 }
 
 #called once upon plugin initialization
