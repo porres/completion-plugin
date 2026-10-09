@@ -87,7 +87,7 @@ set ::completion::waiting_trigger_keyrelease 0
 
 # =========== [DEBUG mode on/off] ============
 # 1 = true 0 = false
-set ::::completion::completion_debug 0
+set ::completion::completion_debug 0
 # debug categories
 set ::completion::debug_loaded_externals 0
 set ::completion::debug_entering_procs 1
@@ -527,7 +527,7 @@ proc ::completion::all_key_handler {key} {
 
     # Hotkey: open the popup and consume the key so it doesn't get typed.
     if {$key eq $::completion::config(hotkey)} {
-        ::pdwindow::post "autocmpl_dbg: hotkey pressed: $key\n"
+        ::completion::msg_debug "hotkey pressed: $key" "key_event"
         ::completion::trigger
         return -code break
     }
@@ -542,14 +542,11 @@ proc ::completion::all_key_handler {key} {
     # Everything else falls through to Pd's own handling.
 }
 
-# this is called when the user enters the auto completion mode
-# this is called when the user enters the auto completion mode
-# this is called when the user enters the auto completion mode
 proc ::completion::trigger {} {
-    ::pdwindow::post "autocmpl_dbg: ===trigger fired===\n"
+    ::completion::msg_debug "===trigger fired===" "entering_procs"
 
     if {$::completion::current_canvas eq "" || $::completion::current_tag eq ""} {
-        ::pdwindow::post "autocmpl_dbg: trigger: no canvas/tag, aborting\n"
+        ::completion::msg_debug "trigger: no canvas/tag, aborting" "key_event"
         return
     }
 
@@ -561,7 +558,7 @@ proc ::completion::trigger {} {
 
     set ::completion::current_text [$::completion::current_canvas itemcget $::completion::current_tag -text]
     ::completion::trimspaces
-    ::pdwindow::post "autocmpl_dbg: trigger: current text = '$::completion::current_text'\n"
+    ::completion::msg_debug "trigger: current text = '$::completion::current_text'" "searches"
 
     ::completion::search $::completion::current_text
 
@@ -580,9 +577,9 @@ proc ::completion::trigger {} {
 
     if {[llength $::completion::completions] == 0} {
         ::completion::set_empty_listbox
-        ::pdwindow::post "autocmpl_dbg: trigger: no completions found\n"
+        ::completion::msg_debug "trigger: no completions found" "searches"
     } else {
-        ::pdwindow::post "autocmpl_dbg: trigger: [llength $::completion::completions] completions found\n"
+        ::completion::msg_debug "trigger: [llength $::completion::completions] completions found" "searches"
     }
 }
 
