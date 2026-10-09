@@ -8,7 +8,7 @@
 #     * Neither the name of the <organization> nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -24,9 +24,9 @@
 # ==========================================
 
 # Copyright (c) 2011-2023 yvan, henri, porres
-# The original version was developed by Yvan Volochine in 2011. 
-# Henri Augusto embraced in 2018. Porres took over in 2023 
-# 
+# The original version was developed by Yvan Volochine in 2011.
+# Henri Augusto embraced in 2018. Porres took over in 2023
+#
 # https://github.com/porres/completion-plugin
 
 package require Tcl 8.5
@@ -42,7 +42,6 @@ namespace eval ::dialog_path:: {
 
 namespace eval ::completion:: {
     variable ::completion::config
-#    variable external_filetype ""
 }
 
 ###########################################################
@@ -52,7 +51,7 @@ rename pdtk_text_editing pdtk_text_editing_old
 ############################################################
 # GLOBALS
 
-set ::completion::plugin_version "0.50.0"
+set ::completion::plugin_version "0.50.0-pd056"
 
 # default
 set ::completion::config(max_lines) 15
@@ -60,20 +59,12 @@ set ::completion::config(n_lines) $::completion::config(max_lines)
 if {$::windowingsystem eq "aqua"} {
     set ::completion::config(font) "Menlo"
 } else {
-    set ::completion::config(font) "DejaVu Sans Mono"    
+    set ::completion::config(font) "DejaVu Sans Mono"
 }
-set ::completion::config(font_size) 12 ;# actually load patche's font size now
-set ::completion::config(font_weight) "normal" 
+set ::completion::config(font_size) 12
+set ::completion::config(font_weight) "normal"
 set ::completion::config(bg) blue
 set ::completion::config(auto_complete_libs) 0
-#set ::completion::config(bg) "#0a85fe"
-#set ::completion::config(skipbg) "#0ad871"
-#set ::completion::config(monobg) "#9832ff"
-#set ::completion::config(offset) 0
-#set ::completion::config(max_scan_depth) 1
-#set ::completion::config(save_mode) 1 ;# save keywords (s/r/array/table/...)
-
-# some nice colors to try: #0a85fe #0ad871 #9832ff ; those are great: #ff9831 #ff00ee #012345
 
 # private variables
 
@@ -95,26 +86,22 @@ set ::completion::is_alt_down 0
 set ::completion::waiting_trigger_keyrelease 0
 
 # =========== [DEBUG mode on/off] ============
-#1 = true 0 = false
-set ::::completion::completion_debug 0 ;
+# 1 = true 0 = false
+set ::completion::completion_debug 0
 # debug categories
-set ::completion::debug_loaded_externals 1 ;#prints loaded externals
-set ::completion::debug_entering_procs 1 ;#prints a message when entering a proc
-set ::completion::debug_key_event 1 ;#prints a message when a key event is processed
-set ::completion::debug_searches 1 ;#messages about the performed searches
-set ::completion::debug_popup_gui 1 ;#messages related to the popup containing the code suggestions
-set ::completion::debug_char_manipulation 1 ;#messages related to what we are doing with the text on the obj boxes (inserting/deleting chars)
-# set ::completion::debug_unique_names 0 ;#messages related to storing [send/receive] names [tabread] names and alike.
-set ::completion::debug_settings 1 ;#messages related to storing settings to a file.
-set ::completion::debug_prefix 1 ;#messages related to adding prefix.
+set ::completion::debug_loaded_externals 0
+set ::completion::debug_entering_procs 1
+set ::completion::debug_key_event 1
+set ::completion::debug_searches 1
+set ::completion::debug_popup_gui 1
+set ::completion::debug_char_manipulation 1
+set ::completion::debug_settings 1
+set ::completion::debug_prefix 0
 
 # (0 = normal / 1 = skipping)
 set ::completion::current_search_mode 0
 
 set ::completion::all_externals {}
-
-#set ::completion::loaded_libs {}
-
 set ::completion::loaded_paths {}
 
 #useful function for debugging
@@ -128,8 +115,6 @@ proc ::completion::msg_debug {dbgMsg {debugKey "none"}} {
         "popup_gui" { if { !$::completion::debug_popup_gui } { return  } }
         "char_manipulation" { if { !$::completion::debug_char_manipulation } { return  } }
         "settings" { if { !$::completion::debug_settings } { return  } }
-#        "unique_names" { if { !$::completion::debug_unique_names } { return  } }
-#        "prefix" { if { !$::completion::debug_prefix } { return  } }
     }
     if { $::::completion::completion_debug } {
         ::pdwindow::post "autocmpl_dbg: $dbgMsg\n"
@@ -137,9 +122,6 @@ proc ::completion::msg_debug {dbgMsg {debugKey "none"}} {
 }
 
 # This function sends keydown messages to pd
-# It is better to use a separate function instead of hardcoded pdsend messages like Yvan was doing because the pd tcl api might change. 
-# In fact when i took the project that was one of the major bugs with it. It was using pdsend "pd key 1 $keynum 0" which where not working.
-# So using functions (procs) promotes mantainability because you only have to change their implementation to fix the code after api changes.
 proc ::completion::sendKeyDown {keynum} {
     pdsend "[winfo toplevel $::completion::current_canvas] key 1 $keynum 0"
 }
@@ -150,27 +132,46 @@ proc ::completion::sendKeyDownAndUp {keynum} {
     pdsend "[winfo toplevel $::completion::current_canvas] key 0 $keynum 0"
 }
 
-# add menu entry in Pd
+# ============================================================
+# === FIX 1: menu initialization for Pd 0.56 ===
+# In Pd 0.56 the Preferences menu is created as ".preferences"
+# and is NOT nested under ".menubar.apple". The old hardcoded
+# path caused an "invalid command name" error at load time.
+# ============================================================
 proc ::completion::init_options_menu {} {
-    .preferences add separator
-    .preferences add command \
-        -label [_ "Completion-plugin"] \
-        -command {::completion::show_options_gui}
+    if {[winfo exists .preferences]} {
+        .preferences add separator
+        .preferences add command \
+            -label [_ "Completion-plugin"] \
+            -command {::completion::show_options_gui}
+    } else {
+        ::pdwindow::post "completion-plugin: WARNING - .preferences menu not found; skipping menu entry.\n"
+    }
 }
 
 #called once upon plugin initialization
 proc ::completion::init {} {
-#    variable external_filetype
     set ::completion::plugin_path "$::current_plugin_loadpath"
     ::pdwindow::post "------------- completion-plugin -------------\n"
-    ::pdwindow::post "\n"
     ::pdwindow::post "Version: $::completion::plugin_version\n"
+
     ::completion::read_config
-    if {[catch {bind "completion-plugin" <$completion::config(hotkey)> {::completion::trigger; break;}} err]} {
-        ::pdwindow::post "\n---Error while trying to bind the completion plugin hotkey---\n"
-        ::pdwindow::post "      hotkey: $::completion::config(hotkey)\n"
-        ::pdwindow::post "      err: $err\n\n"
+
+    if {![info exists ::completion::config(hotkey)] || $::completion::config(hotkey) eq ""} {
+        set ::completion::config(hotkey) "F12"
     }
+    ::pdwindow::post "completion-plugin: trigger key is <$::completion::config(hotkey)>\n"
+
+    # Append our handler to Pd's existing <KeyPress> binding on "all".
+    # Avoid the "+" syntax because some Tcl builds reject "+{...}".
+    set old_binding [bind all <KeyPress>]
+    ::pdwindow::post "completion-plugin: existing 'all' KeyPress binding = '$old_binding'\n"
+    if {$old_binding eq ""} {
+        bind all <KeyPress> {::completion::all_key_handler %K}
+    } else {
+        bind all <KeyPress> "${old_binding}\n::completion::all_key_handler %K"
+    }
+
     ::completion::scan_all_completions
     ::completion::init_options_menu
 }
@@ -178,8 +179,7 @@ proc ::completion::init {} {
 proc ::completion::scan_all_completions {} {
     set initTime [clock milliseconds]
 
-# Vanilla internal objects
-    set ::completion::all_externals { 
+    set ::completion::all_externals {
         bang trigger route swap print float int value symbol makefilename send receive \
         pack unpack list append list\ prepend list\ store list\ split list\ trim list\ length list\ fromsymbol list\ tosymbol \
         tabread tabread4 tabwrite soundfiler table array\ define array\ size array\ sum array\ get array\ set array\ quantile array\ random array\ max array\ min \
@@ -204,22 +204,14 @@ proc ::completion::scan_all_completions {} {
     ::completion::add_user_externals
     ::completion::add_user_customcompletions
 
-    # clear the loaded_libs because it was only used to scan 
-    # the right objects located in multi-object distributions
-#    set ::completion::loaded_libs {}
     set ::completion::loaded_paths {}
 
     set ::completion::all_externals [lsort -unique $::completion::all_externals]
-#    ::completion::add_special_messages ;#AFTER sorting
-    
+
     set count [llength $::completion::all_externals]
     ::pdwindow::post "found $count suggestions\n"
     ::pdwindow::post "\n"
     ::pdwindow::post "------------- completion-plugin -------------\n"
-
-#    set finalTime [clock milliseconds]
-#    set delta [expr {$finalTime-$initTime}]
-#    ::pdwindow::post "\[completion-plugin\] loading time took $delta ms\n"
 }
 
 #opens the plugin's manual file (as called from the configuration window)
@@ -238,45 +230,32 @@ proc ::completion::show_options_gui {} {
 
     frame .options.f -padx 5 -pady 5
 
-    #Options for background color
     label .options.f.click_to_choose_label -text "click to\nchoose"
 
-    #Hotkey
     label .options.f.hotkeylabel -text "hotkey (requires restart)"
     entry .options.f.hotkeyentry -width 12
     .options.f.hotkeyentry insert 0 "$::completion::config(hotkey)"
     bind .options.f.hotkeyentry <KeyRelease> {
         set ::completion::config(hotkey) [.options.f.hotkeyentry get]
     }
-    
-    #Buttons
+
     button .options.f.save_btn -text "Save settings" -command ::completion::write_config
     button .options.f.default_btn -text "Restore factory settings" -command ::completion::restore_default_option
     button .options.f.rescan_btn -text "Rescan externals" -command ::completion::scan_all_completions
     .options.f.rescan_btn configure -font {-weight bold}
     button .options.f.manual_btn -text "Open Manual" -command ::completion::open_manual_file
-    #.options.f.manual_btn configure -font {-family courier -size 12 -weight bold -slant italic}
     .options.f.manual_btn configure -font {-weight bold}
 
     set padding 2
 
-    # ::::GRID::::
-
-    #setup main frame stuff
     grid .options.f -column 0 -row 0
-#    grid .options.f.title_label -column 0 -row 0 -columnspan 3 -padx $padding -pady $padding
 
-    #setup the rest
     set current_row 1
-    
-    #hotkey stuff
+
     grid .options.f.hotkeylabel -column 0 -row $current_row -padx $padding -pady $padding
     grid .options.f.hotkeyentry -column 1 -row $current_row -padx $padding -pady $padding
     incr current_row
 
-    # Status labels and buttons
-    #Is the status label used?
-    #grid .options.f.status_label -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
     grid .options.f.default_btn -column 0 -row $current_row -padx $padding -pady 8 -sticky "e"
     grid .options.f.save_btn -column 1 -row $current_row -padx $padding -pady 8 -sticky "w"
     incr current_row
@@ -293,12 +272,10 @@ proc ::completion::update_options_gui {} {
 
 proc ::completion::restore_default_option {} {
     set ::completion::config(hotkey) "Alt_L"
-#    set ::completion::config(max_lines) 15
-#    set ::completion::config(n_lines) $::completion::config(max_lines)
     if {$::windowingsystem eq "aqua"} {
         set ::completion::config(font) "Menlo"
     } else {
-        set ::completion::config(font) "DejaVu Sans Mono"    
+        set ::completion::config(font) "DejaVu Sans Mono"
     }
     ::completion::update_options_gui
     ::completion::write_config
@@ -308,15 +285,12 @@ proc ::completion::gui_options_update_color {entryWidget frameWidget configTag} 
     if { [regexp {^\#(\d|[a-f]){6}$} [$entryWidget get]] } {
         set ::completion::config($configTag) [$entryWidget get]
         $frameWidget configure -background $::completion::config($configTag)
-        # change color to show it's valid
         $entryWidget configure -foreground #000000
     } else {
-        # chagne color to show it's INvalid
         $entryWidget configure -foreground #de2233
     }
 }
 
-# taken from kiosk-plugin.tcl by Iohannes
 proc ::completion::read_config {{filename completion.cfg}} {
     if {[file exists $filename]} {
         set fp [open $filename r]
@@ -332,18 +306,12 @@ proc ::completion::read_config {{filename completion.cfg}} {
     while {![eof $fp]} {
         set data [gets $fp]
         if { ![regexp {^\w} $data] } {
-            continue ;#this line doesn't start with a char
+            continue
         }
-        # if the user provided the key value pair
-        ::completion::msg_debug "data length = [llength $data]" "settings"
         if { [llength $data ] == 2} {
             set ::completion::config([lindex $data 0]) [lindex $data 1]
-            ::completion::msg_debug "::completion::config([lindex $data 0]) = $::completion::config([lindex $data 0])" "settings"
         } elseif { [llength $data ] > 2} {
             set ::completion::config([lindex $data 0]) [lrange $data 1 end]
-            ::completion::msg_debug "::completion::config([lindex $data 0]) = $::completion::config([lindex $data 0])" "settings"
-        } else {
-            ::completion::msg_debug "ERROR reading ::completion::config([lindex $data 0]) => data = $data" "settings"
         }
     }
     close $fp
@@ -361,153 +329,117 @@ proc ::completion::write_config {{filename completion.cfg}} {
             set had_to_create_file false
         } else {
             set fp [open $filename w+]
-            set had_to_create_file true ;#file will get overwritten so we need to append to $lines
+            set had_to_create_file true
         }
     }
-    #read the lines from the file
     set lines [split [read $fp] "\n"]
     close $fp
 
-    #process the lines
     set lines [::completion::write_config_variable $lines "hotkey"]
 
-    #write the file
     set fp [open $filename w]
     if { $had_to_create_file } {
         set lines [linsert $lines 0 "This file was generated by Completion Plugin in the absence of the original file that comes with the plugin.\n"]
     }
     puts $fp [join $lines "\n"]
     close $fp
-    #.options.f.status_label configure -text "saved!"
-    #after 1000 { .options.f.status_label configure -text "" }
 }
 
 proc ::completion::write_config_variable {file_lines name} {
-    #https://stackoverflow.com/a/37812995/5818209   for writing to specific lines
-    ::completion::msg_debug "Saving config($name)" "settings"
-    set pattern ^$name\\s ;# do NOT enclose this in brackets
-    ::completion::msg_debug "pattern = $pattern" "settings"
+    set pattern ^$name\\s
     set index 0
     set found false
     foreach line $file_lines {
-        #::completion::msg_debug "line = $line"
         if {[regexp $pattern $line]} {
-            ::completion::msg_debug "current variable's line = $line" "settings"
             set file_lines [lreplace $file_lines $index $index "$name $::completion::config($name)"]
-            ::completion::msg_debug "line AFTER = $line" "settings"
             set found true
         }
         incr index
     }
     if { !$found } {
-        #if there is no line for that variable, write it
         lappend file_lines "$name $::completion::config($name)"
     }
     return $file_lines
 }
 
-# this function looks for objects in the current folder and recursively call itself for each subfolder
-# we read the subfolders because pd reads the subpatches!
 proc ::completion::add_user_externalsOnFolder {{dir .} depth} {
-    ::completion::msg_debug "===add_user_externalsOnFolder $dir===" "loaded_externals"
-# list of pd files on the folder
     set pd_files [glob -directory $dir -nocomplain -types {f} -- *.pd]
     foreach filepath $pd_files {
-        ::completion::msg_debug "     external = $filepath" "loaded_externals"
-        set file_tail [file tail $filepath] ;# file extension
+        set file_tail [file tail $filepath]
         set name_without_extension [file rootname $file_tail]
-        set dir_name [file dirname $filepath] 
         set how_many_folders_to_get $depth
         set folder_name [lrange [file split $filepath] end-$how_many_folders_to_get end-1 ]
         set extension_path [join $folder_name \/]
         if {$extension_path ne ""} {
             set extension_path $extension_path\/
         }
-#            ::completion::msg_debug "       depth =  $depth" "loaded_externals"
-            ::completion::msg_debug "       filepath = $filepath" "loaded_externals"
-            ::completion::msg_debug "       dir_name = $dir_name" "loaded_externals"
-            ::completion::msg_debug "       folder_name = $folder_name" "loaded_externals"
-            ::completion::msg_debug "       extension_path = $extension_path" "loaded_externals"
-            ::completion::msg_debug "       file_tail = $file_tail" "loaded_externals"
-            ::completion::msg_debug "       name_without_extension = $name_without_extension" "loaded_externals"
+        # Strip -help suffix if present, otherwise use name as-is.
         if {[string range $name_without_extension end-4 end] eq "-help"} {
-#            ::pdwindow::post "name_without_extension = $name_without_extension\n"
             set external_name [string range $name_without_extension 0 end-5]
-
-            ::completion::msg_debug "       external_name = $external_name" "loaded_externals"
-
-            lappend ::completion::all_externals $extension_path$external_name
-#            lappend ::completion::all_externals $external_name
-#            lappend ::completion::loaded_libs $extension_path
+        } else {
+            set external_name $name_without_extension
         }
+        lappend ::completion::all_externals $extension_path$external_name
     }
 }
 
 proc ::completion::search_static_temp {} {
     set pathlist [concat $::sys_staticpath $::sys_temppath]
     foreach pathdir $pathlist {
-#        ::pdwindow::post "extra pathdir: $pathdir\n"
         set dir [file normalize $pathdir]
         if { ! [file isdirectory $dir]} {
             continue
         }
         lappend ::completion::loaded_paths $pathdir
-        ::pdwindow::post " - scanning: $dir\n"
         ::completion::add_user_externalsOnFolder $dir 0
         foreach subdir [glob -nocomplain -directory $dir -type d *] {
             set folder_name [lrange [file split $pathdir] end end ]
             if { $folder_name eq "extra" } {
                 set subdir_name [lrange [file split $subdir] end end ]
-#                ::pdwindow::post "extra extra extra -> subdir_name = $subdir_name\n"
-                if { $subdir eq "bob~" } { 
-                    return 
-                } elseif { $subdir_name eq "bonk~" } { 
-                    return 
-                } elseif { $subdir_name eq "choice" } { 
-                    return 
-                } elseif { $subdir_name eq "fiddle~" } { 
-                    return 
-                } elseif { $subdir_name eq "loop~" } { 
-                    return 
-                } elseif { $subdir_name eq "lrshift~" } { 
-                    return 
-                } elseif { $subdir_name eq "pd~" } { 
-                    return 
-                } elseif { $subdir_name eq "pique" } { 
-                    return 
-                } elseif { $subdir_name eq "sigmund~" } { 
-                    return 
-                } elseif { $subdir_name eq "stdout" } { 
-                    return 
-                } else { 
+                if { $subdir eq "bob~" } {
+                    return
+                } elseif { $subdir_name eq "bonk~" } {
+                    return
+                } elseif { $subdir_name eq "choice" } {
+                    return
+                } elseif { $subdir_name eq "fiddle~" } {
+                    return
+                } elseif { $subdir_name eq "loop~" } {
+                    return
+                } elseif { $subdir_name eq "lrshift~" } {
+                    return
+                } elseif { $subdir_name eq "pd~" } {
+                    return
+                } elseif { $subdir_name eq "pique" } {
+                    return
+                } elseif { $subdir_name eq "sigmund~" } {
+                    return
+                } elseif { $subdir_name eq "stdout" } {
+                    return
+                } else {
                     lappend ::completion::loaded_paths $subdir
-                    ::completion::add_user_externalsOnFolder $subdir 1 
-                } 
+                    ::completion::add_user_externalsOnFolder $subdir 1
+                }
             } else {
                 lappend ::completion::loaded_paths $subdir
                 ::completion::add_user_externalsOnFolder $subdir 1
             }
         }
-    }   
+    }
 }
 
-# this proc runs the main search ::completion::add_user_externalsOnFolder into each main folder
 proc ::completion::add_user_externals {} {
-    ::completion::msg_debug "-----searching add_user_externals-----" "loaded_externals"
     if {[namespace exists ::pd_docsdir] && [::pd_docsdir::externals_path_is_valid]} {
-        # new preferred scanning way, faster and without duplicates
-        set path [::pd_docsdir::get_externals_path] 
+        set path [::pd_docsdir::get_externals_path]
         lappend ::completion::loaded_paths $path
         set dir [file normalize $path]
-        ::pdwindow::post " - scanning: $dir\n"
         ::completion::add_user_externalsOnFolder $dir 0
         foreach subdir [glob -nocomplain -directory $dir -type d *] {
             lappend ::completion::loaded_paths $subdir
             ::completion::add_user_externalsOnFolder $subdir 1
         }
-    } 
-    ::completion::search_static_temp 
-    # user added paths
+    }
+    ::completion::search_static_temp
     set searchpaths [concat $::sys_searchpath]
     set ::completion::loaded_paths [lsort -unique $::completion::loaded_paths]
     foreach searchpath $searchpaths {
@@ -515,12 +447,11 @@ proc ::completion::add_user_externals {} {
         set done_before 0
         foreach paths $::completion::loaded_paths {
             if { $dir eq $paths } {
-               set done_before 1
-               break
-            } 
+                set done_before 1
+                break
+            }
         }
         if { ! $done_before } {
-            ::pdwindow::post " - scanning: $dir\n"
             ::completion::add_user_externalsOnFolder $dir 0
             lappend ::completion::loaded_paths $dir
             foreach subdir [glob -nocomplain -directory $dir -type d *] {
@@ -529,21 +460,15 @@ proc ::completion::add_user_externals {} {
             }
         }
     }
-    #remove duplicates from the loaded_libs
-#    set ::completion::loaded_libs [lsort -unique $::completion::loaded_libs]
 }
 
-
-#adds any completion set in any txt file under "custom_completions"
 proc ::completion::add_user_customcompletions {} {
-    ::completion::msg_debug "entering add user object list" "entering_procs"
     set userdir [file join $::completion::plugin_path "custom_completions"]
     foreach filename [glob -directory $userdir -nocomplain -types {f} -- *.txt] {
         ::completion::read_completionslist_file $filename
     }
 }
 
-# Reads anything located in the .txt files in the subfolders
 proc ::completion::read_completionslist_file {afile} {
     if {[file exists $afile]
         && [file readable $afile]
@@ -565,10 +490,7 @@ proc ::completion::read_completionslist_file {afile} {
 #                      overwritten                        #
 ###########################################################
 proc pdtk_text_editing {mytoplevel tag editing} {
-    ::completion::msg_debug "entering overwritten pdtk text editing" "entering_procs"
-    #::completion::msg_debug "   mytoplevel = $mytoplevel"
-    #::completion::msg_debug "   tag = $tag"
-    #::completion::msg_debug "   editing = $editing"
+    ::completion::msg_debug "pdtk_text_editing: toplevel=$mytoplevel tag=$tag editing=$editing" "key_event"
     set ::completion::toplevel $mytoplevel
     set tkcanvas [tkcanvas_name $mytoplevel]
     set rectcoords [$tkcanvas bbox $tag]
@@ -578,220 +500,148 @@ proc pdtk_text_editing {mytoplevel tag editing} {
     }
     if {$editing == 0} {
         selection clear $tkcanvas
-        # completion
-        # Henri: Yvan originally called set_empty_listbox. Doens't seem to make sense. It wouldn't even reset ::completion::current_text
         ::completion::popup_destroy
         set ::completion::completion_text_updated 0
-        # store keywords. Henri: i'm disabling that. See developmentGuide.md
-        #if {$::completion::config(save_mode)} {
-        #    set text [$tkcanvas itemcget $::completion::current_tag -text]
-        #    ::completion_store $text
-        #}
-    } {
+    } else {
         set ::editingtext($mytoplevel) $editing
-        # completion
         set ::completion::current_canvas $tkcanvas
         if {$tag ne ""} {
-            # unbind Keys if new object
-            if {$tag ne $::completion::current_tag} {
-                bind $::completion::current_canvas <KeyRelease> {}
-            }
             set ::completion::current_tag $tag
-        }
-
-        if {[string first "completion-plugin" [bindtags $::completion::current_canvas] ] eq -1} {
-            bindtags $::completion::current_canvas "completion-plugin [bindtags $::completion::current_canvas]"
         }
     }
     set ::completion::new_object $editing
     $tkcanvas focus $tag
-    set ::completion::focus "tag"
+    set ::completion::focus "canvas"
 }
 
-# this is called when the user enters the auto completion mode
+# Central key handler bound directly on the canvas widget.
+# We do NOT add custom bindtags, to avoid interfering with Pd 0.56's
+# own text input handling.
+
+# Global key handler installed on the "all" bindtag.
+# Filters aggressively so it only acts when a completion popup is relevant.
+proc ::completion::all_key_handler {key} {
+    # Only act when an object box is being edited.
+    if {!$::completion::new_object} { return }
+    if {$::completion::current_canvas eq "" || $::completion::current_tag eq ""} { return }
+
+    # Hotkey: open the popup and consume the key so it doesn't get typed.
+    if {$key eq $::completion::config(hotkey)} {
+        ::completion::msg_debug "hotkey pressed: $key" "key_event"
+        ::completion::trigger
+        return -code break
+    }
+
+    # If the popup is open, handle navigation / selection.
+    if {[winfo exists .pop]} {
+        switch -- $key {
+            "Return"    { ::completion::choose_selected ; return -code break }
+            "Escape"    { ::completion::popup_destroy 1 ; return -code break }
+        }
+    }
+    # Everything else falls through to Pd's own handling.
+}
+
 proc ::completion::trigger {} {
-    ::completion::msg_debug "===entering trigger===" "entering_procs"
+    ::completion::msg_debug "===trigger fired===" "entering_procs"
+
+    if {$::completion::current_canvas eq "" || $::completion::current_tag eq ""} {
+        ::completion::msg_debug "trigger: no canvas/tag, aborting" "key_event"
+        return
+    }
 
     set font_info [$::completion::current_canvas itemcget $::completion::current_tag -font]
-    set fontface [lindex $font_info 0]
+    set ::completion::config(font)         [lindex $font_info 0]
     set size [lindex $font_info 1]
-    set fontsize 12
-    if { $size ne "" } {
-        set fontsize [expr {$size * -1}]
-    }
-#    set fontsize [expr {[lindex $font_info 1] * -1}]
-    set fontweight [lindex $font_info 2]
+    set ::completion::config(font_size)    [expr {$size ne "" ? $size * -1 : 12}]
+    set ::completion::config(font_weight)  [lindex $font_info 2]
 
-    set ::completion::config(font) $fontface 
-    set ::completion::config(font_size) $fontsize 
-    set ::completion::config(font_weight) $fontweight 
+    set ::completion::current_text [$::completion::current_canvas itemcget $::completion::current_tag -text]
+    ::completion::trimspaces
+    ::completion::msg_debug "trigger: current text = '$::completion::current_text'" "searches"
 
-    set ::completion::waiting_trigger_keyrelease 1
-        
-    set ::completion::is_shift_down 0
-    set ::completion::is_ctrl_down 0
-    set ::completion::is_alt_down 0
-    if {$::completion::current_canvas ne ""
-        && $::completion::current_text eq ""
-        && ! $::completion::completion_text_updated
-    } {
-        #this code is responsible for reading any text already present in the object when you enter the autocomplete mode
-        set ::completion::current_text [$::completion::current_canvas itemcget $::completion::current_tag -text]
+    ::completion::search $::completion::current_text
 
-        ::completion::trimspaces
-        ::completion::msg_debug "Text that was already in the box = $::completion::current_text\n" "searches"
-    }
-
-    ::completion::msg_debug "-----TRIGGER------\n"
-    ::completion::msg_debug "current_canvas: $::completion::current_canvas\n"
-    set dbg [bindtags $::completion::current_canvas]
-    ::completion::msg_debug "bindtags: $dbg\n"
-
-    #if the user is typing into an object box
-    if {$::completion::new_object} {
-
-            # detect if the user is typing on an object, message or comment
-            set ::tags_on_object_being_edited [$::completion::current_canvas itemcget $::completion::current_tag -tags]
-                ::completion::msg_debug "\[$::completion::current_canvas itemcget $::completion::current_tag -tags\] = $::tags_on_object_being_edited"
-            set ::type_of_object_being_edited [lindex $::tags_on_object_being_edited 1]
-                ::completion::msg_debug "------>::type_of_object_being_edited = $::type_of_object_being_edited \n"
-            if { ($::type_of_object_being_edited ne "obj") } {
-                ::completion::msg_debug "the completion-plugin does not trigger for objects of type $::type_of_object_being_edited"
-                return
-            }
-
-            bind $::completion::current_canvas <KeyRelease> {::completion::text_keys %K}
-            set completed_because_was_unique 0
-            if {![winfo exists .pop]} {
-                    ::completion::search $::completion::current_text
-                    set listsize [llength $::completion::completions]
-                    if {$listsize < $::completion::config(max_lines)} {
-                        set ::completion::config(n_lines) $listsize
-                    #    ::pdwindow::post "listsize: $listsize\n"
-                    } else {
-                        set ::completion::config(n_lines) $::completion::config(max_lines)
-                    }
-                    ::completion::popup_draw
-#                    ::completion::try_common_prefix
-                    ::completion::update_completions_gui
-                    if {[::completion::unique] } {
-                        ::completion::choose_selected ;#Henri: was replace_text. This is needed for the three modes
-                        ::completion::popup_destroy
-                        ::completion::set_empty_listbox
-                        set completed_because_was_unique 1
-                    }
-            }
-            # if the unique completion was used there will be no .pop to bind!
-            if { !$completed_because_was_unique } {
-                # work in progress
-                # bind .pop <FocusOut> {::completion::msg_debug "the user has unfocused the popup"; ::completion::popup_destroy }
-                # bind $::completion::current_canvas <FocusOut> {::completion::msg_debug "the user has unfocused the canvas"}
-            }
+    set listsize [llength $::completion::completions]
+    if {$listsize < $::completion::config(max_lines)} {
+        set ::completion::config(n_lines) $listsize
     } else {
-        ::completion::msg_debug "the user is NOT typing into an object box" "key_event"
+        set ::completion::config(n_lines) $::completion::config(max_lines)
     }
-    # this should be time enough for the user to release the keys (so we don't capture the release keys of the plugin hotkey)
-    after 200 {
-        ::completion::msg_debug "accepting keys\n"
-        set ::completion::waiting_trigger_keyrelease 0
+
+    if {![winfo exists .pop]} {
+        ::completion::popup_draw
+    } else {
+        ::completion::update_completions_gui
+    }
+
+    if {[llength $::completion::completions] == 0} {
+        ::completion::set_empty_listbox
+        ::completion::msg_debug "trigger: no completions found" "searches"
+    } else {
+        ::completion::msg_debug "trigger: [llength $::completion::completions] completions found" "searches"
     }
 }
 
 proc ::completion::skipping_search {{text ""}} {
-    #set variables related to skipping_search
     ::completion::msg_debug "::completion::skipping_search($text)" "searches"
     set ::completion::current_search_mode 1
-    # do we really need to check if the popup exists?
     if {[winfo exists .pop]} {
         .pop.f.lb configure -selectbackground $::completion::config(bg)
     }
-    #do the search
     set text [string range $text 1 end]
     set text [::completion::fix_pattern $text]
     set chars [split $text {}]
     set pattern ""
     foreach char $chars {
-        ::completion::msg_debug "--------------char = $char"
         set pattern "$pattern$char.*"
     }
-    ::completion::msg_debug "RegExp pattern  = $pattern" "searches"
-    ::completion::msg_debug "--------------chars = $chars" "searches"
     set ::completion::completions [lsearch -all -inline -regexp -nocase $::completion::all_externals $pattern]
 }
 
-# Searches for matches.
-# (this method detects the current search mode and returns after calling the right one 
-# if it happens to be normal or skipping.)
 proc ::completion::search {{text ""}} {
     ::completion::msg_debug "::completion::search($text)" "searches"
-    ::completion::msg_debug "::completion::completion_text_updated = $::completion::completion_text_updated" "searches"
-    # without the arg there are some bugs when keys come from listbox ;# what Yvan meant?
     set ::completion::erase_text $::completion::current_text
-    #if starts with a . it is a skipping search
     if {[string range $text 0 0] eq "."} {
         ::completion::skipping_search $text
         return
     }
-    # Else just do the normal search
     if {[winfo exists .pop.f.lb]} {
         .pop.f.lb configure -selectbackground $::completion::config(bg)
     }
     set ::completion::current_search_mode 0
     if {$text ne ""} {
-        ::completion::msg_debug "=searching for $text=" "searches"
         set ::completion::current_text $text
         set ::completion::erase_text $text
         set ::should_restore False
     } elseif { !$::completion::completion_text_updated } {
-        ::completion::msg_debug "searching for empty string" "searches"
-        #set ::completion::current_text \
-            [$::completion::current_canvas itemcget $::completion::current_tag -text]
-        set ::previous_current_text $::completion::current_text ;# saves the current text
-        ::completion::msg_debug "original current_text: $::completion::current_text" "searches"
+        set ::previous_current_text $::completion::current_text
         set ::completion::current_text ""
-        ::completion::msg_debug "replaced current_text is $::completion::current_text" "searches"
         set ::should_restore True
     }
     ::completion::trimspaces
 
-    # Now this part will always run so you can perform "empty searchs" which will return all objects. In Yvan's code it would clear completions on an "empty search"
-    #Yvan was using -glob patterns but they wouldn't match stuff with forward slashes (/)
-    #for example if you type "freq" it wouldn't match cyclone/freqshift~
-    #using -regexp now allows for that
-    #Also i've added case insensitive searching (since PD object creation IS case-insensitive).
     set pattern "$::completion::current_text"
     set pattern [::completion::fix_pattern $pattern]
 
     set ::completion::completions [lsearch -all -inline -regexp -nocase $::completion::all_externals $pattern]
     if {$::should_restore} {
-        set ::completion::current_text $::previous_current_text ;# restores the current text
-        ::completion::msg_debug "restored current_text: $::completion::current_text" "searches"
+        set ::completion::current_text $::previous_current_text
     }
     ::completion::update_completions_gui
-    ::completion::msg_debug "SEARCH END! Current text is $::completion::current_text" "searches"
 }
 
-# This is a method that edits a string used as a regex pattern escaping chars in order to correcly compile the regexp;
-# example: we must escape "++" to "\\+\\+". 
 proc ::completion::fix_pattern {pattern} {
-        ::completion::msg_debug "================== - pattern = $pattern" "searches"
     set pattern [string map {"+" "\\+"} $pattern]
-        ::completion::msg_debug "+ - pattern = $pattern" "searches"
     set pattern [string map {"*" "\\*"} $pattern]
-        ::completion::msg_debug "* - pattern = $pattern" "searches"
     set skippingPrefix [string range $pattern 0 0]
-        ::completion::msg_debug "skippingPrefix = $skippingPrefix" "searches"
     set skippingString [string range $pattern 1 end]
-        ::completion::msg_debug "skippingString = $skippingString" "searches"
     set skippingString [string map {"." "\\."} $skippingString]
-        ::completion::msg_debug ". skippingString = $skippingString" "searches"
     set pattern "$skippingPrefix$skippingString"
-        ::completion::msg_debug ". - pattern = $pattern" "searches"
     return $pattern
 }
 
 proc ::completion::update_completions_gui {} {
-    ::completion::msg_debug "entering update_completions_gui" "entering_procs"
     if {[winfo exists .pop.f.lb]} {
         ::completion::scrollbar_check
         if {$::completion::completions == {}} { ::completion::set_empty_listbox }
@@ -804,22 +654,15 @@ proc ::completion::update_completions_gui {} {
     }
 }
 
-# I am disabling this (Porres)
-# I think it should suggest a completion even if it's just 1!
 proc ::completion::unique {} {
-    ::completion::msg_debug "entering unique" "entering_procs"
-#    return [expr {[llength $::completion::completions] == 1 && [::completion::valid]}]
     return 0
 }
 
 proc ::completion::valid {} {
-    ::completion::msg_debug "entering valid" "entering_procs"
     return [expr {[lindex $::completion::completions 0] ne "(empty)"}]
 }
 
-# this is run when there are no results to display
 proc ::completion::set_empty_listbox {} {
-    ::completion::msg_debug "entering set_empty_listbox" "entering_procs"
     if {[winfo exists .pop.f.lb]} {
         ::completion::scrollbar_check
         .pop.f.lb configure -state disabled
@@ -827,55 +670,32 @@ proc ::completion::set_empty_listbox {} {
     set ::completion::completions {"(empty)"}
 }
 
-#this proc moves the selection down (incrementing the index)
 proc ::completion::increment {{amount 1}} {
-    ::completion::msg_debug "entering increment" "entering_procs"
-    ::completion::msg_debug "amount = $amount" "popup_gui"
     if {$::completion::focus != "pop"} {
         focus .pop.f.lb
         set ::completion::focus "pop"
     }
-    ::completion::msg_debug "bindtags = [bindtags .pop.f.lb]" "popup_gui"
-    ::completion::msg_debug "bindings on .pop.f.lb = [bind .pop.f.lb]" "popup_gui"
     set selected [.pop.f.lb curselection]
-    ::completion::msg_debug "selected = $selected" "popup_gui"
-    
-    #if completion list is empty then "selected" will be empty
     if { ![ string is integer -strict $selected] } {
         return
     }
     set updated [expr {($selected + $amount) % [llength $::completion::completions]}]
-    ::completion::msg_debug "updated = $updated" "popup_gui"
     .pop.f.lb selection clear 0 end
     .pop.f.lb selection set $updated
-    ::completion::msg_debug "curselection after selection set = [.pop.f.lb curselection]" "popup_gui"
     .pop.f.lb see $updated
 }
 
-#this is called when the user selects the desired external
 proc ::completion::choose_selected {} {
-    ::completion::msg_debug "entering choose selected" "entering_procs"
     if {[::completion::valid]} {
         set selected_index [.pop.f.lb curselection]
         ::completion::popup_destroy
         set choosen_item [lindex $::completion::completions $selected_index]
-#        set isSpecialMsg [::completion::is_special_msg $choosen_item]
-#        if { $isSpecialMsg } {
-#            ::completion::erase_text
-#            ::completion::delete_obj_onspecialmsg
-#        } else {
-            ::completion::replace_text $choosen_item            
-#        }
-        ::completion::msg_debug "----------->Selected word: $choosen_item" "char_manipulation"
-        set ::completion::current_text "" ;# clear for next search
+        ::completion::replace_text $choosen_item
+        set ::completion::current_text ""
         ::completion::set_empty_listbox
-        #focus -force $::completion::current_canvas
-        #set ::completion::focus "canvas"
-        ::completion::msg_debug "end of choose_selected current_text: $::completion::current_text" "char_manipulation"
     }
 }
 
-# The keypressed and key released methods just route their input to this proc and it does the rest
 proc ::completion::update_modifiers {key pressed_or_released} {
     switch -- $key {
         "Shift_L"   { set ::completion::is_shift_down $pressed_or_released }
@@ -887,34 +707,19 @@ proc ::completion::update_modifiers {key pressed_or_released} {
     }
 }
 
-# receives <Key> events while listbox has focus
-# some stuff is passed correctly only on KeyRelease and other stuff only on KeyPress
-# so that's why there is both a lb_keyrelease and a lb_keypress procs
 proc ::completion::keypress {key unicode} {
-    ::completion::msg_debug "key pressed was $key.  Unicode = $unicode\n" "key_event"
     ::completion::update_modifiers $key 1
-    # this is needed for users with keyboards in languages where ~ is a Multi_Key (ex: portuguese, french, etc) - only tested on PT-BR keyboard
-    # tested on Windows 7 with a pt-br keyboard. This unicode "~~" is not caught on key release
     switch -- $unicode {
         "~~" { ::completion::insert_key "~" }
     }
 }
 
-# receives <KeyRelease> events while listbox has focus
-# some stuff is passed correctly only on KeyRelease and other stuff only on KeyPress
-# so that's why there is both a lb_keyrelease and a lb_keypress procs
 proc ::completion::lb_keyrelease {key unicode} {
-    ::completion::msg_debug "~lb_keys~ key released was $key    unicode = $unicode\n" "key_event"
-    # We don't want to receive a key if the user pressed the plugin-activation hotkey.
-    # otherwise (let's say the user is using Control+space as the hotkey) when the user activates the plugin it would output a space
-    # so when we get the keydown event we wait for the keyrelease and do nothing.
     if {$::completion::waiting_trigger_keyrelease eq 1} {
-        ::completion::msg_debug "got the key release. \[$key, $unicode\]\n"
         return
     }
     ::completion::update_modifiers $key 0
     set ::completion::completion_text_updated 0
-    #validate keys (currently we can't detect "~" in windows because it results in a "Multi_key")
     if {[regexp {^[a-zA-Z0-9~/\._\+\-]{1}$} $key]} {
         ::completion::insert_key $key; return
     }
@@ -935,14 +740,10 @@ proc ::completion::lb_keyrelease {key unicode} {
         "dollar" { ::completion::insert_key "$" }
         "percent" { ::completion::insert_key "%" }
         "ampersand" { ::completion::insert_key "&" }
-        "percent" { ::completion::insert_key "%" }
-        "underscore" { ::completion::insert_key "_" }
         "plus" { ::completion::insert_key "+" }
-        "minus" { ::completion::insert_key "-" }
     }
 }
 
-# keys from textbox (the box where you tipe stuff in PD)
 proc ::completion::text_keys {key} {
     ::completion::msg_debug "~text_keys~ key pressed was $key\n" "key_event"
     set ::completion::completion_text_updated 0
@@ -956,58 +757,31 @@ proc ::completion::text_keys {key} {
     } elseif {$key eq "space"} {
         ::completion::search
     } elseif {$key eq "BackSpace"} {
-        after 10; ::completion::search ;# FIXME
+        after 10; ::completion::search
     } elseif {$key eq "Return"} {
         ::completion::choose_or_unedit
     }
 }
 
-# this inserts the key
 proc ::completion::insert_key {key} {
-    ::completion::msg_debug "entering ::completion::insert_key" "entering_procs"
     scan $key %c keynum
-    # pdsend "pd key 1 $keynum 0" ; notworking
     ::completion::sendKeyDown $keynum
-    ::completion::msg_debug "inserting key $keynum" "char_manipulation"
-
     append ::completion::current_text $key
-    # set ::completion::current_text [$::completion::current_canvas itemcget $::completion::current_tag -text] ;# why does this line doesn't work?
-
-    # to debug the right line
     ::completion::search $::completion::current_text
     set ::completion::focus "canvas"
     pdtk_text_editing $::completion::toplevel $::completion::current_tag 1
     set ::completion::completion_text_updated 0
-    # for some reason this does not work without passing the arg ;# what Yvan meant?
-    #Those lines were making the completion windom vanish!
-    #focus -force $::completion::toplevel
-    #focus -force $::completion::current_canvas
 }
 
-# erases what the user typed since it started the pluging
 proc ::completion::erase_text {} {
-    ::completion::msg_debug "entering erase text" "entering_procs"
-    # simulate backspace keys
-    ::completion::msg_debug "erase_text = $::completion::erase_text" "char_manipulation"
-    set i [expr {[string length $::completion::erase_text] + 2}] ;# FIXME
+    set i [expr {[string length $::completion::erase_text] + 2}]
     while {--$i > 0} {
-        ::completion::sendKeyDownAndUp 8 ;#8 = BackSpace
+        ::completion::sendKeyDownAndUp 8
         incr i -1
     }
 }
 
-# this is the proc that types the object name for the user. It runs in two steps
-# 1: by erasing what the user typed (calling erase_text)
-# 2: typing the match chosen by the user
-# Why not just send the remaining chars, you ask? It would not make sense in "skip" search mode!
-# You might also wonder why not use
-#       pdtk_text_selectall $::completion::current_canvas $::completion::current_tag
-#                               OR
-#       pdtk_text_set $::completion::current_canvas $::completion::current_tag ""
-# to select everything and delete it or directly clear the text object. 
-# I've tried it but it doesn't work (idky yet).
 proc ::completion::replace_text {args} {
-    ::completion::msg_debug "===Entering replace_text" "entering_procs"
     ::completion::erase_text
     set text ""
     if { ( !$::completion::config(auto_complete_libs) && !$::completion::is_shift_down) ||
@@ -1016,28 +790,17 @@ proc ::completion::replace_text {args} {
         set args [split $args /]
         set args [lindex $args end]
     }
-    # if there are spaces the args variable will arrive as a list. 
-    # Example: {"list" "append" "3" "4" "5"}
-    # this foreach concatenates it back to a string: "list append 3 4 5"
     foreach arg $args { set text [concat $text $arg] }
-    #for each char send a keydown event to PD to simulate user key presses
     for {set i 0} {$i < [string length $text]} {incr i 1} {
         set cha [string index $text $i]
-        # ::completion::msg_debug "current char =  $cha"
         scan $cha %c keynum
         ::completion::sendKeyDown $keynum
     }
     set ::completion::erase_text $text
-        ::completion::msg_debug "erase_text = $::completion::erase_text" "char_manipulation"
-    # nasty hack: the widget does not update his text because we pretend
-    # we typed the text although we faked it so pd gets it as well (mmh)
     set ::completion::completion_text_updated 1
-    #set ::completion::current_text "" ; Not needed because choose_selected will empty that
 }
 
-# called when user press Enter
 proc ::completion::choose_or_unedit {} {
-    ::completion::msg_debug "entering choose or unedit" "entering_procs"
     if {[winfo exists .pop] && [::completion::valid]} {
         ::completion::choose_selected
     } {
@@ -1046,64 +809,47 @@ proc ::completion::choose_or_unedit {} {
 }
 
 proc ::completion::text_unedit {} {
-    ::completion::msg_debug "entering text unedit" "entering_procs"
     pdsend "$::completion::focused_window reselect"
     set ::completion::new_object 0
     set ::completion::completion_text_updated 0
 }
 
-# this is called when the user press the BackSpace key (erases on char)
 proc ::completion::chop {} {
-    ::completion::msg_debug "entering chop" "entering_procs"
-    #if the user press shift+backspace restart search ?????
-    if {$::completion::is_shift_down} { 
-        ::completion::msg_debug "shift+BackSpace = clearing search" "char_manipulation"
+    if {$::completion::is_shift_down} {
         ::completion::erase_text
         set ::completion::current_text ""
         ::completion::search
         return
     }
-    ::completion::sendKeyDownAndUp 8 ;#8 = BackSpace
-    #::completion::msg_debug "current_text before chopping $::completion::current_text"
-    set ::completion::current_text [string replace $::completion::current_text end end] ;#this removes the last char (?!)
-    ::completion::msg_debug "current_text after choping = $::completion::current_text" "char_manipulation"
-    #::completion::msg_debug "current_text after chopping $::completion::current_text"
+    ::completion::sendKeyDownAndUp 8
+    set ::completion::current_text [string replace $::completion::current_text end end]
     ::completion::search $::completion::current_text
-    #what does it do?
     if {[winfo exists .pop]} {
         .pop.f.lb selection clear 0 end
         .pop.f.lb selection set 0
     }
-    # focus -force $::completion::current_canvas ;# THIS IS THE LINE THAT MAKES THE AUTOCOMPLETE VANISH AFTER BACKSPACE
     set ::completion::focus "canvas"
 }
 
 proc ::completion::popup_draw {} {
-    ::completion::msg_debug "entering popup draw" "entering_procs"
     if {![winfo exists .pop]} {
         set screen_w [winfo screenwidth $::completion::current_canvas]
         set screen_h [winfo screenheight $::completion::current_canvas]
-        ::completion::msg_debug "Screen width = $screen_w" "popup_gui"
-        #::completion::msg_debug "Screen height = $screen_h"
         set popup_width 40
         set menuheight 32
         if {$::windowingsystem ne "aqua"} { incr menuheight 24 }
-#        incr menuheight $::completion::config(offset)
         set geom [wm geometry $::completion::toplevel]
-        # fix weird bug on osx
         set decoLeft 0
         set decoTop 0
         regexp -- {([0-9]+)x([0-9]+)\+([0-9]+)\+([0-9]+)} $geom -> \
             width height decoLeft decoTop
         set left [expr {$decoLeft + $::completion::editx}]
         set top [expr {$decoTop + $::completion::edity + $menuheight}]
-        ::completion::msg_debug "left = $left" "popup_gui"
-        ::completion::msg_debug "top = $top" "popup_gui"
         catch { destroy .pop }
         toplevel .pop
-        wm overrideredirect .pop 1 
-        if {$::windowingsystem eq "aqua"} {            
-            raise .pop ;# without this the gui would NOT be displayed on OS X
+        wm overrideredirect .pop 1
+        if {$::windowingsystem eq "aqua"} {
+            raise .pop
         }
         wm geometry .pop +$left+$top
         frame .pop.f -takefocus 0
@@ -1112,7 +858,7 @@ proc ::completion::popup_draw {} {
         .pop.f configure -relief solid -borderwidth 1 -background white
 
         set currentbackground $::completion::config(bg)
-        
+
         listbox .pop.f.lb \
             -selectmode browse \
             -width $popup_width \
@@ -1124,8 +870,6 @@ proc ::completion::popup_draw {} {
             -yscrollcommand [list .pop.f.sb set] -takefocus 1 \
             -disabledforeground #333333
 
-#-font {-family $::completion::config(font) -size $::completion::config(font_size) -weight $::completion::config(font_weight)} \
-
         pack .pop.f.lb -side left -expand 1 -fill both
         .pop.f.lb configure -relief flat \
             -font [list $::completion::config(font) $::completion::config(font_size)] \
@@ -1136,37 +880,20 @@ proc ::completion::popup_draw {} {
         bind .pop.f.lb <Escape> {after idle { ::completion::popup_destroy 1 }}
         bind .pop.f.lb <KeyRelease> {::completion::lb_keyrelease %K %A}
         bind .pop.f.lb <Key> {after idle {::completion::keypress %K %A}}
-        # ButtonReleases:
-        # LMB = 1    MMB (click) = 2     RMB = 3   ScrollUp = 4    ScrollDown = 5
         bind .pop.f.lb <ButtonRelease> {
             if { %b eq 1} {
-                after idle {::completion::choose_selected}                
+                after idle {::completion::choose_selected}
             }
         }
 
-        # Overriding the Up and Down key due to a bug:
-        # the .pop.f.lb selection set $updated call in ::completion::increment 
-        # works but on the next non-overridden Up/Down event it would resume from the last 
-        # index BEFORE the ::increment call. It would happend because of the event being dispatch 
-        # to the next bindtag which would be ListBox.
-
-        # for that reason  we could remove the ListBox bindtag. It would also avoids strange behaviour with home and end keys (that for some reason can't be overriden)
-        # yet if we do this the user wouldn't be able to select the suggestions with the mouse so we leave the ListBox on the bindtags.
-        #bindtags .pop.f.lb {.pop.f.lb .pop all} 
-
-        # and then set my own bindings (Those Up and Down binds would override the Up and Down on the ListBox bindtags if they weren't removed)
         bind .pop.f.lb <Up> {::completion::increment -1 ; break}
         bind .pop.f.lb <Down> {::completion::increment 1 ; break}
         bind .pop.f.lb <Control-Up> {after idle {::completion::increment -10} ; break}
         bind .pop.f.lb <Control-Down> {after idle {::completion::increment 10} ; break}
 
-        # I could NOT override the Next and Prior keys (Pg Up and Pg Down) without removing the ListBox bindtag. Strange hmmm probably a bug
-        # also even after removing the ListBox from the bindtags those don't work! Only if i hold some modifier (so it becomes more specific).
-        # probably part of the same bug
         bind .pop.f.lb <Prior> {after idle {::completion::increment -20} ; break}
         bind .pop.f.lb <Next> {after idle {::completion::increment 20} ; break}
 
-        # bindings for Home and End
         bind .pop.f.lb <Home> {after idle {
             .pop.f.lb selection clear 0 end
             .pop.f.lb selection set 0
@@ -1180,35 +907,25 @@ proc ::completion::popup_draw {} {
         focus .pop.f.lb
         set ::completion::focus "pop"
         .pop.f.lb selection set 0 0
-        ::completion::msg_debug "top = $top" "popup_gui"
         set height [winfo reqheight .pop.f.lb]
-        # if the popup windows were going to be displayed partly off-screen let's move it left so it doesn't
-        #the width is given in units of 8 pixels
-        #https://core.tcl.tk/bwidget/doc/bwidget/BWman/ListBox.html#-width
         if { [expr {$left+$popup_width*8>$screen_w}] } {
             set left [expr {$screen_w-$popup_width*8} ]
-            ::completion::msg_debug "left = $left" "popup_gui"
         }
         if {$::windowingsystem eq "win32"} {
-            # here we assume the user did not set the taskbark  on the sides and also did not set it's size to be more than 1/7 of the screen
             incr screen_h [ expr {-1*$screen_h/7} ]
         }
-        #winfo height window
-        #Returns a decimal string giving window's height in pixels. When a window is first created its height will be 1 pixel; the height will eventually be changed by a geometry manager to fulfil the window's needs. If you need the true height immediately after creating a widget, invoke update to force the geometry manager to arrange it, or use winfo reqheight to get the window's requested height instead of its actual height.
-        ::completion::msg_debug "@screen_h = $screen_h\n        @height = $height" "popup_gui"
         if { [expr {$top+$height>$screen_h}] } {
             set top [expr {$screen_h-$height} ]
             wm geometry .pop +$left+$top
-            #.pop.f.lb configure -+
-            ::completion::msg_debug "top = $top" "popup_gui"
         }
     }
 }
 
 proc ::completion::popup_destroy {{unbind 0}} {
-    ::completion::msg_debug "entering popup_destroy" "entering_procs"
     catch { destroy .pop }
-    focus -force $::completion::current_canvas
+    if {$::completion::current_canvas ne ""} {
+        focus -force $::completion::current_canvas
+    }
     set ::completion::focus "canvas"
     if {$unbind} {
         bind $::completion::current_canvas <KeyRelease> {}
@@ -1216,17 +933,11 @@ proc ::completion::popup_destroy {{unbind 0}} {
     set ::completion::current_text ""
 }
 
-# Henri: i don't get exactly what this does. Commenting out those packs seems 
-# to have absolutely no effect in my system
-# pack documentation: https://www.tcl.tk/man/tcl/TkCmd/pack.htm#M11
 proc ::completion::scrollbar_check {} {
-    ::completion::msg_debug "entering scrollbar_check" "entering_procs"
     if {[winfo exists .pop]} {
         if {[llength $::completion::completions] < $::completion::config(max_lines)} {
-            #::completion::msg_debug "completions < max numer of lines"
             pack forget .pop.f.sb
         } else {
-            #::completion::msg_debug "completions >= max numer of lines"
             pack .pop.f.sb -side left -fill y
         }
     }
@@ -1235,10 +946,8 @@ proc ::completion::scrollbar_check {} {
 ############################################################
 # utils
 
-# `prefix' from Bruce Hartweg <http://wiki.tcl.tk/44>
 proc ::completion::prefix {s1 s2} {
     regexp {^(.*).*\0\1} "$s1\0$s2" all pref
-    ::completion::msg_debug "prefix output = $pref" "prefix"
     return $pref
 }
 
@@ -1253,3 +962,4 @@ bind all <$::modifier-Key-Return> {pdsend "$::completion::focused_window reselec
 # main
 
 ::completion::init
+
